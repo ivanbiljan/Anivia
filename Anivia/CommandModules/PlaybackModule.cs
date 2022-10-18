@@ -7,6 +7,7 @@ using Discord;
 using Discord.Commands;
 using Victoria;
 using Victoria.Enums;
+using Victoria.Filters;
 using Victoria.Responses.Search;
 
 namespace Anivia.CommandModules;
@@ -41,26 +42,56 @@ public sealed class PlaybackModule : ModuleBase
         }
 
         var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel)Context.Channel);
-        var searchResponse = await _lavaNode.SearchAsync(SearchType.YouTube, song);
-        var track = searchResponse.Tracks.First();
-
-        var queue = player.GetQueue();
-        queue.Add(track);
         
-        if (queue.Length > 1)
+        var searchResponse = Uri.IsWellFormedUriString(song, UriKind.RelativeOrAbsolute)
+            ? await _lavaNode.SearchAsync(SearchType.Direct, song)
+            : await _lavaNode.SearchAsync(SearchType.YouTube, song);
+
+        if (searchResponse.Tracks.Count == 0)
         {
+            await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
+
+            return;
+        }
+
+        var track = searchResponse.Tracks.First();
+        var queue = player.GetQueue();
+        if (searchResponse.Status == SearchStatus.PlaylistLoaded)
+        {
+            queue.Add(searchResponse.Tracks);
+            
             var embed = new EmbedBuilder()
-                .WithTitle("Added Track")
-                .WithThumbnailUrl(track.)
+                .WithTitle("Added Playlist")
+                .WithThumbnailUrl($"https://img.youtube.com/vi/{track.Id}/0.jpg")
                 .AddField("Track", $"[{track.Title}]({track.Url})")
                 // .AddField("Estimated time until played", "n")
                 .AddField("Track length", track.Duration, true)
                 // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
                 .AddField("Position in queue", queue.Length, true)
-                .WithFooter($"Requested by {Context.User.Username}")
+                .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
                 .Build();
 
             await ReplyAsync(embed: embed);
+        }
+        else
+        {
+            queue.Add(track);
+
+            if (queue.Length > 1)
+            {
+                var embed = new EmbedBuilder()
+                    .WithTitle("Added Track")
+                    .WithThumbnailUrl($"https://img.youtube.com/vi/{track.Id}/0.jpg")
+                    .AddField("Track", $"[{track.Title}]({track.Url})")
+                    // .AddField("Estimated time until played", "n")
+                    .AddField("Track length", track.Duration, true)
+                    // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
+                    .AddField("Position in queue", queue.Length, true)
+                    .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .Build();
+
+                await ReplyAsync(embed: embed);
+            }
         }
 
         if (player.PlayerState is PlayerState.None or PlayerState.Stopped)
@@ -256,7 +287,7 @@ public sealed class PlaybackModule : ModuleBase
 
             return;
         }
-
+        
         await player.SeekAsync(position);
     }
 
