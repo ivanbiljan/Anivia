@@ -49,7 +49,9 @@ public sealed class PlaybackModule : ModuleBase
         
         if (queue.Length > 1)
         {
-            var embed = new EmbedBuilder().WithTitle("Added Track")
+            var embed = new EmbedBuilder()
+                .WithTitle("Added Track")
+                .WithThumbnailUrl(track.)
                 .AddField("Track", $"[{track.Title}]({track.Url})")
                 // .AddField("Estimated time until played", "n")
                 .AddField("Track length", track.Duration, true)
@@ -156,8 +158,8 @@ public sealed class PlaybackModule : ModuleBase
 
             return;
         }
-
-        await player.SkipAsync();
+        
+        await player.StopAsync();
     }
 
     [Command("queue")]
@@ -172,27 +174,94 @@ public sealed class PlaybackModule : ModuleBase
         }
 
         var queue = player.GetQueue();
+        if (queue.Length == 0)
+        {
+            await ReplyAsync(embed: Embeds.Error("The queue is empty"));
+
+            return;
+        }
+        
         var embed = new EmbedBuilder()
             .WithDescription(
                 string.Join(
                     Environment.NewLine,
                     queue.Select(
                         (track, index) =>
-                            $"{index + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})")))
+                            $"{(track == player.Track ? "♪ " : string.Empty)}{index + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})")))
             .Build();
 
         await ReplyAsync(embed: embed);
     }
 
+    [Command("loop current")]
+    [Alias("loop", "repeat", "repeat current")]
+    public async Task LoopCurrentSong()
+    {
+        var voiceState = (IVoiceState) Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+        
+        var player = _lavaNode.GetPlayer(Context.Guild);
+        if (player is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
+
+        var queue = player.GetQueue();
+        queue.IsCurrentTrackLooped = !queue.IsCurrentTrackLooped;
+
+        await ReplyAsync(embed: Embeds.Success($"I will {(queue.IsCurrentTrackLooped ? "now" : "no longer")} repeat the current track"));
+    }
+
+    [Command("loop queue")]
+    [Alias("repeat queue")]
+    public async Task LoopQueueAsync()
+    {
+        var voiceState = (IVoiceState) Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+        
+        var player = _lavaNode.GetPlayer(Context.Guild);
+        if (player is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
+
+        var queue = player.GetQueue();
+        queue.IsLooped = !queue.IsLooped;
+
+        await ReplyAsync(embed: Embeds.Success($"I will {(queue.IsLooped ? "now" : "no longer")} repeat the queue"));
+    }
+
     [Command("seek")]
+    [Alias("wind to")]
     public async Task SeekAsync(string timestamp)
     {
         var player = _lavaNode.GetPlayer(Context.Guild);
+        if (!TimeSpan.TryParse(timestamp, out var position))
+        {
+            await ReplyAsync(embed: Embeds.Error("Invalid timestamp"));
 
-        await player.SeekAsync(TimeSpan.Parse(timestamp));
+            return;
+        }
+
+        await player.SeekAsync(position);
     }
 
     [Command("forward")]
+    [Alias("f")]
     public async Task ForwardAsync(int seconds)
     {
         var player = _lavaNode.GetPlayer(Context.Guild);
@@ -202,6 +271,7 @@ public sealed class PlaybackModule : ModuleBase
     }
     
     [Command("back")]
+    [Alias("b", "rewind")]
     public async Task BackAsync(int seconds)
     {
         var player = _lavaNode.GetPlayer(Context.Guild);

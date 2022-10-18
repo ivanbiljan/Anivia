@@ -47,7 +47,14 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
     {
         if (_currentIndex < _tracks.Count)
         {
-            return _tracks[_currentIndex++];
+            var track = _tracks[_currentIndex];
+            
+            if (!IsCurrentTrackLooped)
+            {
+                ++_currentIndex;
+            }
+
+            return track;
         }
 
         if (!IsLooped)
@@ -65,6 +72,8 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
     public LavaTrack? Next => _currentIndex  > _tracks.Count - 1 ? null : _tracks[_currentIndex];
         
     public bool IsLooped { get; set; }
+    
+    public bool IsCurrentTrackLooped { get; set; }
 
     public int Length => _tracks.Count;
         

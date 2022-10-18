@@ -59,18 +59,16 @@ var lavaNode = host.Services.GetRequiredService<LavaNode>();
 lavaNode.OnTrackEnded += async args =>
 {
     var queue = args.Player.GetQueue();
-    var playerExtension = args.Player.GetExtension();
-    if (playerExtension.IsTrackLooped)
+    if (queue.IsCurrentTrackLooped)
     {
         await args.Player.PlayAsync(args.Track);
         
         return;
     }
     
-    if (queue.Next is null)
+    if (queue.Next is null && !queue.IsLooped)
     {
-        if (playerExtension.IsQueueLooped)
-
+        queue.Clear();
         await args.Player.TextChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
         
         return;

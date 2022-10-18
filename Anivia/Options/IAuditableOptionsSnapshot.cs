@@ -36,7 +36,7 @@ internal sealed class AuditableOptionsSnapshot<T> : IAuditableOptionsSnapshot<T>
 
     public void Update(Action<T> updateAction)
     {
-        var appSettingsFile = _hostEnvironment.IsDevelopment() ? "appsettings.Development.json" : "appsettings.json2";
+        var appSettingsFile = _hostEnvironment.IsDevelopment() ? "appsettings.Development.json" : "appsettings.json";
         var appSettings = JsonNode.Parse(File.ReadAllText(appSettingsFile))!;
 
         var optionsInstance = appSettings[_configurationSection.Key].Deserialize<T>()!;
