@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Text.Json;
+﻿using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -29,10 +27,11 @@ internal sealed class AuditableOptionsSnapshot<T> : IAuditableOptionsSnapshot<T>
         _hostEnvironment = hostEnvironment;
     }
 
-    public T Get(string name) => _optionsSnapshot.Get(name);
     public IDisposable OnChange(Action<T, string> listener) => throw new NotImplementedException();
 
     public T CurrentValue => _optionsSnapshot.CurrentValue;
+
+    public T Get(string name) => _optionsSnapshot.Get(name);
 
     public void Update(Action<T> updateAction)
     {

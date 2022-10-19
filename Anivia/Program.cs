@@ -1,19 +1,17 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using System;
-using System.Linq;
 using Anivia.CommandModules;
 using Anivia.Extensions;
 using Anivia.Options;
 using Discord;
 using Discord.Commands;
+using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Victoria;
-using Victoria.Enums;
 
 var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
@@ -29,15 +27,19 @@ var host = Host.CreateDefaultBuilder(args)
         {
             services.ConfigureAuditableOptions<DiscordOptions>(
                 context.Configuration.GetSection(DiscordOptions.SectionName));
+            
+            services.ConfigureAuditableOptions<LavalinkOptions>(
+                context.Configuration.GetSection(LavalinkOptions.SectionName));
 
             services.AddSingleton(
                 _ => new DiscordSocketClient(
                     new DiscordSocketConfig
                     {
-                        GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent
+                        GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildPresences | GatewayIntents.GuildMembers
                     })).AddSingleton<IDiscordClient>(provider => provider.GetRequiredService<DiscordSocketClient>());
 
             services.AddSingleton<CommandService>();
+            services.AddSingleton<InteractionService>();
 
             services.AddLavaNode(
                 options =>
@@ -62,19 +64,19 @@ lavaNode.OnTrackEnded += async args =>
     if (queue.IsCurrentTrackLooped)
     {
         await args.Player.PlayAsync(args.Track);
-        
+
         return;
     }
-    
+
     if (queue.Next is null && !queue.IsLooped)
     {
         queue.Clear();
         await args.Player.TextChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
-        
+
         return;
     }
 
-    var track = queue.ConsumeAndAdvance()!;
+    var track = queue.GetNext()!;
     await args.Player.PlayAsync(track);
 };
 
@@ -94,6 +96,16 @@ client.Ready += async () =>
     {
         await lavaNode.ConnectAsync();
     }
+    
+    var interactionService = new InteractionService(client.Rest);
+    await interactionService.AddModulesAsync(typeof(Program).Assembly, host.Services);
+    await interactionService.RegisterCommandsGloballyAsync();
+    
+    client.InteractionCreated += async interaction =>
+    {
+        var ctx = new SocketInteractionContext(client, interaction);
+        await interactionService.ExecuteCommandAsync(ctx, host.Services);
+    };
 };
 
 client.MessageReceived += async message =>
@@ -110,7 +122,7 @@ client.MessageReceived += async message =>
     // Determine if the message is a command based on the prefix and make sure no bots trigger commands
     var commandPrefixes = host.Services.GetRequiredService<IOptionsMonitor<DiscordOptions>>().CurrentValue
         .CommandPrefixes;
-    
+
     if (!commandPrefixes.Any(p => socketUserMessage.HasStringPrefix(p, ref argPos)) &&
         !socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argPos) ||
         socketUserMessage.Author.IsBot)
@@ -128,6 +140,8 @@ client.MessageReceived += async message =>
         argPos,
         host.Services);
 };
+
+client.UserVoiceStateUpdated += async (user, state, _) => { };
 
 var options = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();
 await client.LoginAsync(TokenType.Bot, options.BotToken);

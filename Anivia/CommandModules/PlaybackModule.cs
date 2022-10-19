@@ -53,11 +53,11 @@ public sealed class PlaybackModule : ModuleBase
 
             return;
         }
-
-        var track = searchResponse.Tracks.First();
+        
         var queue = player.GetQueue();
         if (searchResponse.Status == SearchStatus.PlaylistLoaded)
         {
+            var track = searchResponse.Tracks.First();
             queue.Add(searchResponse.Tracks);
             
             var embed = new EmbedBuilder()
@@ -75,16 +75,31 @@ public sealed class PlaybackModule : ModuleBase
         }
         else
         {
-            queue.Add(track);
+            LavaTrack bestMatch = null!;
+            var lowestDistance = int.MaxValue;
+
+            foreach (var track in searchResponse.Tracks.Take(3))
+            {
+                var distance = song.ComputeDistanceTo(track.Title);
+                if (distance >= lowestDistance)
+                {
+                    continue;
+                }
+
+                lowestDistance = distance;
+                bestMatch = track;
+            }
+            
+            queue.Add(bestMatch);
 
             if (queue.Length > 1)
             {
                 var embed = new EmbedBuilder()
                     .WithTitle("Added Track")
-                    .WithThumbnailUrl($"https://img.youtube.com/vi/{track.Id}/0.jpg")
-                    .AddField("Track", $"[{track.Title}]({track.Url})")
+                    .WithThumbnailUrl($"https://img.youtube.com/vi/{bestMatch.Id}/0.jpg")
+                    .AddField("Track", $"[{bestMatch.Title}]({bestMatch.Url})")
                     // .AddField("Estimated time until played", "n")
-                    .AddField("Track length", track.Duration, true)
+                    .AddField("Track length", bestMatch.Duration, true)
                     // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
                     .AddField("Position in queue", queue.Length, true)
                     .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
@@ -96,10 +111,10 @@ public sealed class PlaybackModule : ModuleBase
 
         if (player.PlayerState is PlayerState.None or PlayerState.Stopped)
         {
-            await player.PlayAsync(queue.ConsumeAndAdvance());
+            await player.PlayAsync(queue.GetNext());
         }
     }
-
+    
     [Command("remove")]
     [Alias("rm", "delete", "del")]
     public async Task RemoveAsync(int index)
@@ -218,7 +233,7 @@ public sealed class PlaybackModule : ModuleBase
                     Environment.NewLine,
                     queue.Select(
                         (track, index) =>
-                            $"{(track == player.Track ? "♪ " : string.Empty)}{index + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})")))
+                            $"{(track == queue.Current ? "🎶 " : string.Empty)}{index + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})")))
             .Build();
 
         await ReplyAsync(embed: embed);
