@@ -141,6 +141,39 @@ client.MessageReceived += async message =>
         host.Services);
 };
 
+client.MessageUpdated += async (_, message, _) =>
+{
+    // Don't process the command if it was a system message
+    if (message is not SocketUserMessage socketUserMessage)
+    {
+        return;
+    }
+
+    // Create a number to track where the prefix ends and the command begins
+    var argPos = 0;
+
+    // Determine if the message is a command based on the prefix and make sure no bots trigger commands
+    var commandPrefixes = host.Services.GetRequiredService<IOptionsMonitor<DiscordOptions>>().CurrentValue
+        .CommandPrefixes;
+
+    if (!commandPrefixes.Any(p => socketUserMessage.HasStringPrefix(p, ref argPos)) &&
+        !socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argPos) ||
+        socketUserMessage.Author.IsBot)
+    {
+        return;
+    }
+
+    // Create a WebSocket-based command context based on the message
+    var context = new SocketCommandContext(client, socketUserMessage);
+
+    // Execute the command with the command context we just
+    // created, along with the service provider for precondition checks.
+    await commandService.ExecuteAsync(
+        context,
+        argPos,
+        host.Services);
+};
+
 client.UserVoiceStateUpdated += async (user, state, _) => { };
 
 var options = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();

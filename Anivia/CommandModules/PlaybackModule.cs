@@ -42,7 +42,7 @@ public sealed class PlaybackModule : ModuleBase
         }
 
         var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel)Context.Channel);
-        
+
         var searchResponse = Uri.IsWellFormedUriString(song, UriKind.RelativeOrAbsolute)
             ? await _lavaNode.SearchAsync(SearchType.Direct, song)
             : await _lavaNode.SearchAsync(SearchType.YouTube, song);
@@ -112,6 +112,54 @@ public sealed class PlaybackModule : ModuleBase
         if (player.PlayerState is PlayerState.None or PlayerState.Stopped)
         {
             await player.PlayAsync(queue.GetNext());
+        }
+    }
+
+    public enum BassBoost
+    {
+        None,
+        Low,
+        Medium,
+        High
+    }
+
+    [Command("bassboost")]
+    public async Task BassBoostAsync(BassBoost boost)
+    {
+        var voiceState = (IVoiceState) Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+        
+        if (_lavaNode.HasPlayer(Context.Guild) && _lavaNode.GetPlayer(Context.Guild).VoiceChannel != voiceState.VoiceChannel)
+        {
+            await ReplyAsync(embed: Embeds.Error("Music is already playing"));
+
+            return;
+        }
+
+        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel)Context.Channel);
+
+        var gain = MapBoost();
+
+        for (var i = 0; i < 3; ++i)
+        {
+           await player.EqualizerAsync(new EqualizerBand(i, gain));
+        }
+
+        double MapBoost()
+        {
+            return boost switch
+            {
+                BassBoost.None => 0.0,
+                BassBoost.Low => 0.20,
+                BassBoost.Medium => 0.30,
+                BassBoost.High => 0.35,
+                _ => throw new ArgumentOutOfRangeException(nameof(boost), boost, null)
+            };
         }
     }
     
