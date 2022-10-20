@@ -23,6 +23,7 @@ public sealed class PlaybackModule : ModuleBase
     }
 
     [Command("play")]
+    [Alias("p")]
     [Summary("Queue a track or playlist from a search term or url")]
     public async Task PlayAsync([Remainder] string song)
     {
