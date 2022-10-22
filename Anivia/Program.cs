@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Victoria;
+using Victoria.Node;
 
 var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
@@ -49,7 +50,7 @@ var host = Host.CreateDefaultBuilder(args)
                     options.Hostname = lavalinkOptions.Host;
                     options.Port = lavalinkOptions.Port;
                     options.Authorization = lavalinkOptions.Password;
-                    options.IsSsl = lavalinkOptions.IsSsl;
+                    options.IsSecure = lavalinkOptions.IsSsl;
                 });
         })
     .Build();
@@ -58,7 +59,7 @@ var commandService = host.Services.GetRequiredService<CommandService>();
 await commandService.AddModulesAsync(typeof(Program).Assembly, host.Services);
 
 var lavaNode = host.Services.GetRequiredService<LavaNode>();
-lavaNode.OnTrackEnded += async args =>
+lavaNode.OnTrackEnd += async args =>
 {
     var queue = args.Player.GetQueue();
     if (queue.IsCurrentTrackLooped)
@@ -80,7 +81,7 @@ lavaNode.OnTrackEnded += async args =>
     await args.Player.PlayAsync(track);
 };
 
-lavaNode.OnTrackStarted += async args =>
+lavaNode.OnTrackStart += async args =>
 {
     var embed = new EmbedBuilder()
         .WithDescription($"Started playing [{args.Track.Title}]({args.Track.Url})")

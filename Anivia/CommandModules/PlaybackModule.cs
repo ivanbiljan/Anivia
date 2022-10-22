@@ -1,20 +1,26 @@
 ﻿using System;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Anivia.Extensions;
 using Discord;
 using Discord.Commands;
 using Victoria;
-using Victoria.Enums;
-using Victoria.Filters;
+using Victoria.Node;
+using Victoria.Player;
+using Victoria.Player.Filters;
 using Victoria.Responses.Search;
+using YouTubeSearch;
 
 namespace Anivia.CommandModules;
 
 [Name("Playback")]
 public sealed class PlaybackModule : ModuleBase
 {
+    private static readonly Regex LinkRegex = new(
+        "(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_\\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
+    
     private readonly LavaNode _lavaNode;
 
     public PlaybackModule(LavaNode lavaNode)
@@ -34,20 +40,41 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        if (_lavaNode.HasPlayer(Context.Guild) && _lavaNode.GetPlayer(Context.Guild).VoiceChannel != voiceState.VoiceChannel)
+        // if (_lavaNode.HasPlayer(Context.Guild)/* && _lavaNode.GetPlayer(Context.Guild).VoiceChannel != voiceState.VoiceChannel*/)
+        // {
+        //     await ReplyAsync(embed: Embeds.Error("Music is already playing"));
+        //
+        //     return;
+        // }
+
+        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel)Context.Channel);
+
+        SearchResponse searchResponse;
+        if (Uri.IsWellFormedUriString(song, UriKind.Absolute))
         {
-            await ReplyAsync(embed: Embeds.Error("Music is already playing"));
+            searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, song);
+        }
+        else
+        {
+            var search = new VideoSearch();
+            var matches = await search.GetVideos(song, 1);
+
+            var url = matches.First().getUrl();
+            searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, matches.First().getUrl());
+        }
+
+        if (searchResponse.Status == SearchStatus.LoadFailed)
+        {
+            var reason = !string.IsNullOrWhiteSpace(searchResponse.Exception.Message)
+                ? searchResponse.Exception.Message
+                : "unknown";
+            
+            await ReplyAsync(embed: Embeds.Error($"Error loading track: {reason}"));
 
             return;
         }
 
-        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel)Context.Channel);
-
-        var searchResponse = Uri.IsWellFormedUriString(song, UriKind.RelativeOrAbsolute)
-            ? await _lavaNode.SearchAsync(SearchType.Direct, song)
-            : await _lavaNode.SearchAsync(SearchType.YouTube, song);
-
-        if (searchResponse.Tracks.Count == 0)
+        if (searchResponse.Status == SearchStatus.NoMatches)
         {
             await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
 
@@ -65,9 +92,9 @@ public sealed class PlaybackModule : ModuleBase
                 .WithThumbnailUrl($"https://img.youtube.com/vi/{track.Id}/0.jpg")
                 .AddField("Track", $"[{track.Title}]({track.Url})")
                 // .AddField("Estimated time until played", "n")
-                .AddField("Track length", track.Duration, true)
+                .AddField("Playlist length", track.Duration, true)
                 // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
-                .AddField("Position in queue", queue.Length, true)
+                .AddField("Number of tracks", queue.Length, true)
                 .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
                 .Build();
 
@@ -75,21 +102,7 @@ public sealed class PlaybackModule : ModuleBase
         }
         else
         {
-            LavaTrack bestMatch = null!;
-            var lowestDistance = int.MaxValue;
-
-            foreach (var track in searchResponse.Tracks.Take(3))
-            {
-                var distance = song.ComputeDistanceTo(track.Title);
-                if (distance >= lowestDistance)
-                {
-                    continue;
-                }
-
-                lowestDistance = distance;
-                bestMatch = track;
-            }
-            
+            var bestMatch = searchResponse.Tracks.First(); 
             queue.Add(bestMatch);
 
             if (queue.Length > 1)
@@ -115,8 +128,67 @@ public sealed class PlaybackModule : ModuleBase
         }
     }
 
+    [Command("clear")]
+    public async Task ClearAsync()
+    {
+        var voiceState = (IVoiceState) Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        if (!_lavaNode.HasPlayer(Context.Guild))
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
+
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        player.GetQueue().Clear();
+        await player.StopAsync();
+
+        await ReplyAsync(embed: Embeds.Success("Cleared the queue"));
+    }
+
+    [Command("move")]
+    [Alias("mv")]
+    public async Task MoveAsync(int from, int to)
+    {
+        var voiceState = (IVoiceState) Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        if (!_lavaNode.HasPlayer(Context.Guild))
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
+
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        var queue = player.GetQueue();
+        if (from < 1 || from > queue.Length || to < 1 || to > queue.Length)
+        {
+            await ReplyAsync(embed: Embeds.Error("Invalid indices"));
+
+            return;
+        }
+        
+        queue.Move(from, to);
+
+        await ReplyAsync(embed: Embeds.Success("Track moved"));
+    }
+
     public enum BassBoost
     {
+        Mute,
         None,
         Low,
         Medium,
@@ -133,27 +205,18 @@ public sealed class PlaybackModule : ModuleBase
 
             return;
         }
-        
-        if (_lavaNode.HasPlayer(Context.Guild) && _lavaNode.GetPlayer(Context.Guild).VoiceChannel != voiceState.VoiceChannel)
-        {
-            await ReplyAsync(embed: Embeds.Error("Music is already playing"));
-
-            return;
-        }
 
         var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel)Context.Channel);
 
         var gain = MapBoost();
 
-        for (var i = 0; i < 3; ++i)
-        {
-           await player.EqualizerAsync(new EqualizerBand(i, gain));
-        }
+        await player.EqualizerAsync(Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, gain)).ToArray());
 
         double MapBoost()
         {
             return boost switch
             {
+                BassBoost.Mute => -0.25,
                 BassBoost.None => 0.0,
                 BassBoost.Low => 0.20,
                 BassBoost.Medium => 0.30,
@@ -175,7 +238,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -201,7 +264,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -223,7 +286,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -245,7 +308,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -259,7 +322,7 @@ public sealed class PlaybackModule : ModuleBase
     [Command("queue")]
     public async Task DisplayQueueAsync()
     {
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -299,7 +362,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -325,7 +388,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
         
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -343,7 +406,7 @@ public sealed class PlaybackModule : ModuleBase
     [Alias("wind to")]
     public async Task SeekAsync(string timestamp)
     {
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (!TimeSpan.TryParse(timestamp, out var position))
         {
             await ReplyAsync(embed: Embeds.Error("Invalid timestamp"));
@@ -358,7 +421,7 @@ public sealed class PlaybackModule : ModuleBase
     [Alias("f")]
     public async Task ForwardAsync(int seconds)
     {
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
 
         var forwardedTimestamp = player.Track.Position.Add(TimeSpan.FromSeconds(seconds));
         await player.SeekAsync(forwardedTimestamp);
@@ -368,7 +431,7 @@ public sealed class PlaybackModule : ModuleBase
     [Alias("b", "rewind")]
     public async Task BackAsync(int seconds)
     {
-        var player = _lavaNode.GetPlayer(Context.Guild);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
 
         var forwardedTimestamp = player.Track.Position.Subtract(TimeSpan.FromSeconds(seconds));
         await player.SeekAsync(forwardedTimestamp);

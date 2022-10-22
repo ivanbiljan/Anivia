@@ -17,8 +17,7 @@
         <PackageReference Include="Microsoft.Extensions.Hosting" Version="6.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options" Version="6.0.0" />
         <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="6.0.0" />
-        <PackageReference Include="Victoria" Version="5.2.8" />
-        <PackageReference Include="YoutubeExplode" Version="6.2.2" />
+        <PackageReference Include="YouTubeSearch" Version="2.2.6" />
     </ItemGroup>
 
     <ItemGroup>
@@ -28,6 +27,10 @@
         <None Update="appsettings.Development.json">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </None>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Victoria\src\Victoria.csproj" />
     </ItemGroup>
 
 </Project>
