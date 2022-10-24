@@ -17,7 +17,7 @@ using Victoria.Node;
 
 var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
-    .AddJsonFile("appsettings.json")
+    .AddJsonFile("appsettings.json", true)
     .AddJsonFile("appsettings.Development.json", true)
     .Build();
 
