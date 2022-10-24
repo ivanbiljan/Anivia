@@ -1,26 +1,22 @@
-namespace Victoria.Player {
+namespace Victoria.Player; 
+
+/// <summary>
+///     Describes status of <see cref="LavaPlayer" />.
+/// </summary>
+public enum PlayerState {
     /// <summary>
-    /// Describes status of <see cref="LavaPlayer"/>.
     /// </summary>
-    public enum PlayerState {
-        /// <summary>
-        /// 
-        /// </summary>
-        None = 0,
+    None = 0,
 
-        /// <summary>
-        /// 
-        /// </summary>
-        Playing = 1,
+    /// <summary>
+    /// </summary>
+    Playing = 1,
 
-        /// <summary>
-        /// 
-        /// </summary>
-        Stopped = 2,
+    /// <summary>
+    /// </summary>
+    Stopped = 2,
 
-        /// <summary>
-        /// 
-        /// </summary>
-        Paused = 3
-    }
+    /// <summary>
+    /// </summary>
+    Paused = 3
 }

@@ -1,5 +1,4 @@
 ﻿using System.Collections;
-using Victoria;
 using Victoria.Player;
 
 namespace Anivia.CommandModules;
@@ -10,13 +9,13 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
 
     private int _currentIndex;
 
+    public LavaTrack? Current { get; private set; }
+
     public bool IsCurrentTrackLooped { get; set; }
 
     public bool IsLooped { get; set; }
 
     public int Length => _tracks.Count;
-
-    public LavaTrack? Current { get; private set; } = null;
 
     public LavaTrack? Next => _currentIndex > _tracks.Count - 1 ? null : _tracks[_currentIndex];
 
@@ -33,6 +32,8 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _tracks.Clear();
         _currentIndex = 0;
     }
+
+    public void SkipTracks(int numberOfTracks) => _currentIndex += numberOfTracks;
 
     public LavaTrack? GetNext()
     {

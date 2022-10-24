@@ -1,11 +1,11 @@
 using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads {
-    internal record VoiceServerPayload {
-        [JsonPropertyName("token")]
-        public string Token { get; init; }
+namespace Victoria.Payloads; 
 
-        [JsonPropertyName("endpoint")]
-        public string Endpoint { get; init; }
-    }
+internal record VoiceServerPayload {
+    [JsonPropertyName("endpoint")]
+    public string Endpoint { get; init; }
+
+    [JsonPropertyName("token")]
+    public string Token { get; init; }
 }

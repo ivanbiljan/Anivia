@@ -1,16 +1,16 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads {
-    internal sealed class ServerUpdatePayload : AbstractPayload {
-        [JsonPropertyName("guildId")]
-        public string GuildId { get; init; }
+namespace Victoria.Payloads; 
 
-        [JsonPropertyName("sessionId")]
-        public string SessionId { get; init; }
+internal sealed class ServerUpdatePayload : AbstractPayload {
+    public ServerUpdatePayload() : base("voiceUpdate") { }
 
-        [JsonPropertyName("event")]
-        public VoiceServerPayload VoiceServerPayload { get; init; }
+    [JsonPropertyName("guildId")]
+    public string GuildId { get; init; }
 
-        public ServerUpdatePayload() : base("voiceUpdate") { }
-    }
+    [JsonPropertyName("sessionId")]
+    public string SessionId { get; init; }
+
+    [JsonPropertyName("event")]
+    public VoiceServerPayload VoiceServerPayload { get; init; }
 }

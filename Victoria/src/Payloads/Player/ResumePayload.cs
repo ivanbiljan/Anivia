@@ -1,17 +1,17 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads.Player {
-    internal sealed class ResumePayload : AbstractPayload {
-        [JsonPropertyName("key")]
-        public string Key { get; }
+namespace Victoria.Payloads.Player; 
 
-        [JsonPropertyName("timeout")]
-        public long Timeout { get; }
-
-        public ResumePayload(string key, TimeSpan timeout) : base("configureResuming") {
-            Key = key;
-            Timeout = (long) timeout.TotalSeconds;
-        }
+internal sealed class ResumePayload : AbstractPayload {
+    public ResumePayload(string key, TimeSpan timeout) : base("configureResuming") {
+        Key = key;
+        Timeout = (long)timeout.TotalSeconds;
     }
+
+    [JsonPropertyName("key")]
+    public string Key { get; }
+
+    [JsonPropertyName("timeout")]
+    public long Timeout { get; }
 }

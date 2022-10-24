@@ -33,21 +33,26 @@ public static class StringExtensions
         {
             dp[0, j] = j;
         }
-        
+
         for (var i = 1; i <= source.Length; i++)
         {
             for (var j = 1; j <= reference.Length; j++)
             {
                 var cost = char.ToLower(reference[j - 1]) == char.ToLower(source[i - 1]) ? 0 : 1;
-                
+
                 dp[i, j] = Math.Min(
                     Math.Min(dp[i - 1, j] + 1, dp[i, j - 1] + 1),
                     dp[i - 1, j - 1] + cost);
             }
         }
-        
+
         return dp[source.Length, reference.Length];
     }
 
     public static string WithUnderline(this string source) => $"__{DiscordMarkdownRegex.Replace(source, "\\$1")}__";
+
+    public static string ToShortString(this TimeSpan timeSpan)
+    {
+        return timeSpan.Hours > 0 ? $"{timeSpan:hh\\:mm\\:ss}" : $"{timeSpan:mm\\:ss}";
+    }
 }

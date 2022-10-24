@@ -15,4 +15,15 @@ public static class Embeds
             .WithColor(0, 255, 0)
             .WithDescription(text)
             .Build();
+    
+    public static Embed Information(string text) =>
+        new EmbedBuilder()
+            .WithColor(0, 0, 255)
+            .WithDescription(text)
+            .Build();
+    
+    public static Embed Default(string text) =>
+        new EmbedBuilder()
+            .WithDescription(text)
+            .Build();
 }

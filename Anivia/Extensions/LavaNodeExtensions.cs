@@ -1,6 +1,5 @@
 ﻿using System.Runtime.CompilerServices;
 using Anivia.CommandModules;
-using Victoria;
 using Victoria.Player;
 
 namespace Anivia.Extensions;

@@ -1,29 +1,25 @@
 ﻿using Anivia.Modals;
 using Anivia.Options;
-using Discord;
+using Discord.Commands;
 using Discord.Interactions;
-using Victoria;
 using Victoria.Node;
 
 namespace Anivia.CommandModules;
 
 public sealed class ConfigurationModule : InteractionModuleBase<SocketInteractionContext>
 {
-    private readonly LavaNode _lavaNode;
     private readonly NodeConfiguration _lavaConfig;
     private readonly IAuditableOptionsSnapshot<LavalinkOptions> _lavalinkOptions;
+    private readonly LavaNode _lavaNode;
 
-    public ConfigurationModule(IAuditableOptionsSnapshot<LavalinkOptions> lavalinkOptions, LavaNode lavaNode, NodeConfiguration lavaConfig)
+    public ConfigurationModule(
+        IAuditableOptionsSnapshot<LavalinkOptions> lavalinkOptions,
+        LavaNode lavaNode,
+        NodeConfiguration lavaConfig)
     {
         _lavalinkOptions = lavalinkOptions;
         _lavaNode = lavaNode;
         _lavaConfig = lavaConfig;
-    }
-
-    [SlashCommand("config-lavalink", "Configures the lavalink server")]
-    public async Task DisplayLavalinkConfigurationModalAsync()
-    {
-        await RespondWithModalAsync<LavalinkConfigurationModal>("lavalinkconfig");
     }
 
     [ModalInteraction("lavalinkconfig")]
@@ -37,10 +33,10 @@ public sealed class ConfigurationModule : InteractionModuleBase<SocketInteractio
         }
 
         var isSsl = bool.TryParse(modal.IsSsl, out var val) && val;
-        
+
         if (_lavaNode.IsConnected)
         {
-            await _lavaNode.DisconnectAsync();
+            await _lavaNode.DisposeAsync();
         }
 
         var oldConfig = new NodeConfiguration
@@ -50,13 +46,13 @@ public sealed class ConfigurationModule : InteractionModuleBase<SocketInteractio
             Authorization = _lavaConfig.Authorization,
             IsSecure = _lavaConfig.IsSecure
         };
-        
+
         try
         {
             _lavaConfig.Hostname = modal.Hostname;
             _lavaConfig.Port = port;
             _lavaConfig.Authorization = modal.Password;
-            // _lavaConfig.IsSecure  = isSsl;
+            _lavaConfig.IsSecure  = isSsl;
 
             await _lavaNode.ConnectAsync();
 
@@ -68,7 +64,7 @@ public sealed class ConfigurationModule : InteractionModuleBase<SocketInteractio
                     options.Password = modal.Password;
                     options.IsSsl = isSsl;
                 });
-            
+
             await RespondAsync(embed: Embeds.Success("Server updated"));
         }
         catch (Exception ex)
@@ -84,8 +80,17 @@ public sealed class ConfigurationModule : InteractionModuleBase<SocketInteractio
             }
 
             await _lavaNode.ConnectAsync();
-            
+
             await RespondAsync(embed: Embeds.Error(ex.Message));
         }
+    }
+
+    [MessageCommand("config-lavalink")]
+    [Command("config-lavalink")]
+    [UserCommand("config-lavalink")]
+    [SlashCommand("config-lavalink", "Configures the lavalink server")]
+    public async Task DisplayLavalinkConfigurationModalAsync()
+    {
+        await RespondWithModalAsync<LavalinkConfigurationModal>("lavalinkconfig");
     }
 }

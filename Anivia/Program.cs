@@ -7,6 +7,7 @@ using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Fergun.Interactive;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -28,7 +29,7 @@ var host = Host.CreateDefaultBuilder(args)
         {
             services.ConfigureAuditableOptions<DiscordOptions>(
                 context.Configuration.GetSection(DiscordOptions.SectionName));
-            
+
             services.ConfigureAuditableOptions<LavalinkOptions>(
                 context.Configuration.GetSection(LavalinkOptions.SectionName));
 
@@ -36,11 +37,22 @@ var host = Host.CreateDefaultBuilder(args)
                 _ => new DiscordSocketClient(
                     new DiscordSocketConfig
                     {
-                        GatewayIntents = GatewayIntents.AllUnprivileged | GatewayIntents.MessageContent | GatewayIntents.GuildPresences | GatewayIntents.GuildMembers
+                        GatewayIntents = GatewayIntents.AllUnprivileged |
+                                         GatewayIntents.MessageContent |
+                                         GatewayIntents.GuildPresences |
+                                         GatewayIntents.GuildMembers
                     })).AddSingleton<IDiscordClient>(provider => provider.GetRequiredService<DiscordSocketClient>());
 
             services.AddSingleton<CommandService>();
+            
             services.AddSingleton<InteractionService>();
+
+            services.AddSingleton(
+                    new InteractiveConfig
+                    {
+                        DefaultTimeout = TimeSpan.FromMinutes(1)
+                    })
+                .AddSingleton<InteractiveService>();
 
             services.AddLavaNode(
                 options =>
@@ -61,6 +73,11 @@ await commandService.AddModulesAsync(typeof(Program).Assembly, host.Services);
 var lavaNode = host.Services.GetRequiredService<LavaNode>();
 lavaNode.OnTrackEnd += async args =>
 {
+    if (!args.Player.IsConnected)
+    {
+        return;
+    }
+
     var queue = args.Player.GetQueue();
     if (queue.IsCurrentTrackLooped)
     {
@@ -97,11 +114,11 @@ client.Ready += async () =>
     {
         await lavaNode.ConnectAsync();
     }
-    
+
     var interactionService = new InteractionService(client.Rest);
     await interactionService.AddModulesAsync(typeof(Program).Assembly, host.Services);
     await interactionService.RegisterCommandsGloballyAsync();
-    
+
     client.InteractionCreated += async interaction =>
     {
         var ctx = new SocketInteractionContext(client, interaction);
@@ -136,7 +153,7 @@ client.MessageReceived += async message =>
 
     // Execute the command with the command context we just
     // created, along with the service provider for precondition checks.
-    await commandService.ExecuteAsync(
+    var result = await commandService.ExecuteAsync(
         context,
         argPos,
         host.Services);
@@ -175,7 +192,34 @@ client.MessageUpdated += async (_, message, _) =>
         host.Services);
 };
 
-client.UserVoiceStateUpdated += async (user, state, _) => { };
+client.UserVoiceStateUpdated += async (user, state, _) =>
+{
+    if (!lavaNode.TryGetPlayer(state.VoiceChannel.Guild, out var player))
+    {
+        return;
+    }
+
+    if (player.VoiceChannel.Id != state.VoiceChannel.Id)
+    {
+        return;
+    }
+
+    if (user.Id == client.CurrentUser.Id)
+    {
+        await lavaNode.LeaveAsync(player.VoiceChannel);
+        await player.TextChannel.SendMessageAsync(embed: Embeds.Error("I have been kicked from the voice channel"));
+
+        return;
+    }
+
+    if (state.VoiceChannel.ConnectedUsers.Count >= 2)
+    {
+        return;
+    }
+
+    await lavaNode.LeaveAsync(player.VoiceChannel);
+    await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
+};
 
 var options = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();
 await client.LoginAsync(TokenType.Bot, options.BotToken);

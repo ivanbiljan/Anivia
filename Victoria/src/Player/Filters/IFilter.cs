@@ -1,6 +1,5 @@
-namespace Victoria.Player.Filters {
-    /// <summary>
-    /// 
-    /// </summary>
-    public interface IFilter { }
-}
+namespace Victoria.Player.Filters; 
+
+/// <summary>
+/// </summary>
+public interface IFilter { }

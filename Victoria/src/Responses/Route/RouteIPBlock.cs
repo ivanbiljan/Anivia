@@ -1,20 +1,22 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Victoria.Responses.Route {
-    /// <summary>
-    ///     Represents the current IP address being used.
-    /// </summary>
-    public sealed class RouteIPBlock {
-        /// <summary>
-        ///     Type of IP address being used.
-        /// </summary>
-        [JsonPropertyName("type"), JsonInclude]
-        public string Type { get; private set; }
+namespace Victoria.Responses.Route; 
 
-        /// <summary>
-        ///     Size of IP address?
-        /// </summary>
-        [JsonPropertyName("size"), JsonInclude]
-        public string Size { get; internal set; }
-    }
+/// <summary>
+///     Represents the current IP address being used.
+/// </summary>
+public sealed class RouteIPBlock {
+    /// <summary>
+    ///     Size of IP address?
+    /// </summary>
+    [JsonPropertyName("size")]
+    [JsonInclude]
+    public string Size { get; internal set; }
+
+    /// <summary>
+    ///     Type of IP address being used.
+    /// </summary>
+    [JsonPropertyName("type")]
+    [JsonInclude]
+    public string Type { get; private set; }
 }
