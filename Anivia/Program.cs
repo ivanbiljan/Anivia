@@ -1,6 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using Anivia.CommandModules;
+using Anivia;using Anivia.CommandModules;
 using Anivia.Extensions;
 using Anivia.Options;
 using Discord;
@@ -221,8 +221,16 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
     await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
 };
 
+RenderKeepAliveTask.Start(client);
+
 var options = configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();
 await client.LoginAsync(TokenType.Bot, options.BotToken);
-await client.StartAsync();
-
-await host.RunAsync();
+try
+{
+    await client.StartAsync();
+    await host.RunAsync();
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Ex occured: " + ex);
+}
