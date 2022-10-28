@@ -310,7 +310,7 @@ public sealed class PlaybackModule : ModuleBase
         await player.PauseAsync();
     }
 
-    [Command("play")]
+    [Command("play", RunMode = RunMode.Async)]
     [Summary("Queue a track or playlist from a search term or url")]
     public async Task PlayAsync([Remainder] string song)
     {

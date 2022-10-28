@@ -13,6 +13,8 @@ using Victoria.Node;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpClient();
+
 builder.Services.ConfigureAuditableOptions<DiscordOptions>(
     builder.Configuration.GetSection(DiscordOptions.SectionName));
 
