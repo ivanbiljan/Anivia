@@ -1,10 +1,12 @@
-﻿using Discord;
+﻿using System.Runtime.CompilerServices;
+using Discord;
 using Discord.WebSocket;
 
 namespace Anivia;
 
 public static class RenderKeepAliveTask
 {
+    private static readonly HttpClient HttpClient = new();
     private static readonly CancellationTokenSource CancellationTokenSource = new();
     private static readonly PeriodicTimer Timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
     private static Task? _handler;
@@ -22,6 +24,8 @@ public static class RenderKeepAliveTask
                 {
                     r.Color = new Color(Random.Shared.Next(255), Random.Shared.Next(255), Random.Shared.Next(255));
                 });
+
+            await HttpClient.GetAsync("https://anivia.onrender.com");
         }
     }
 }
