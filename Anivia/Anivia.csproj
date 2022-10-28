@@ -21,12 +21,6 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Update="appsettings.Development.json">
-            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-        </None>
-    </ItemGroup>
-
-    <ItemGroup>
         <ProjectReference Include="..\Victoria\src\Victoria.csproj" />
     </ItemGroup>
 
