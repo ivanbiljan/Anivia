@@ -1,9 +1,11 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Immutable;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Anivia.Extensions;
 using Anivia.Options;
 using Discord;
 using Discord.Commands;
+using Discord.WebSocket;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using GScraper.Google;
@@ -12,18 +14,22 @@ using Victoria.Node;
 
 namespace Anivia.CommandModules;
 
+[Name("Misc")]
 public sealed class MiscellaneousModule : ModuleBase
 {
     private readonly CommandService _commandService;
+    private readonly InteractiveService _interactiveService;
     private readonly DiscordOptions _discordOptions;
     private readonly LavalinkOptions _lavalinkOptions;
 
     public MiscellaneousModule(
         CommandService commandService,
         IOptionsMonitor<DiscordOptions> discordOptions,
-        IOptionsMonitor<LavalinkOptions> lavalinkOptions)
+        IOptionsMonitor<LavalinkOptions> lavalinkOptions,
+        InteractiveService interactiveService)
     {
         _commandService = commandService;
+        _interactiveService = interactiveService;
         _discordOptions = discordOptions.CurrentValue;
         _lavalinkOptions = lavalinkOptions.CurrentValue;
     }
@@ -75,7 +81,7 @@ public sealed class MiscellaneousModule : ModuleBase
             .WithFooter(PaginatorFooter.None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
             .Build();
 
-        await Interactive.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(10));
+        await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(10));
 
         PageBuilder GeneratePage(int index)
         {
@@ -88,16 +94,14 @@ public sealed class MiscellaneousModule : ModuleBase
                 .WithFooter($"Page {index + 1}/{images.Count}");
         }
     }
-    
-    public InteractiveService Interactive { get; set; }
-    
+
     [Command("reaction", RunMode = RunMode.Async)]
     public async Task NextReactionAsync()
     {
         var msg = await ReplyAsync("Add a reaction to this message.");
 
         // Wait for a reaction in the message.
-        var result = await Interactive.NextReactionAsync(x => x.MessageId == msg.Id, timeout: TimeSpan.FromSeconds(30));
+        var result = await _interactiveService.NextReactionAsync(x => x.MessageId == msg.Id, timeout: TimeSpan.FromSeconds(30));
 
         await msg.ModifyAsync(x =>
         {
@@ -107,14 +111,14 @@ public sealed class MiscellaneousModule : ModuleBase
         });
     }
     
-    [Command("help")]
+    [Command("help", RunMode = RunMode.Async)]
     [Summary("Help command")]
     [Remarks("help [command]")]
     public async Task HelpAsync([Remainder] [Optional] string? commandString)
     {
-        var embedBuilder = new EmbedBuilder();
         if (!string.IsNullOrWhiteSpace(commandString))
         {
+            var embedBuilder = new EmbedBuilder();
             var command = _commandService.Commands.FirstOrDefault(
                 c => string.Equals(c.Name, commandString, StringComparison.InvariantCultureIgnoreCase) ||
                      c.Aliases.Any(a => string.Equals(a, commandString, StringComparison.InvariantCultureIgnoreCase)));
@@ -138,60 +142,42 @@ public sealed class MiscellaneousModule : ModuleBase
             return;
         }
 
-        foreach (var module in _commandService.Modules)
+        var modules = _commandService.Modules.ToList();
+        
+        var paginator = new LazyPaginatorBuilder()
+            .AddUser(Context.User)
+            .WithPageFactory(GeneratePage)
+            .WithMaxPageIndex(modules.Count - 1) // You must specify the max. index the page factory can go.
+            .AddOption(new Emoji("◀"), PaginatorAction.Backward) // Use different emojis and option order.
+            .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+            .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+            .WithCacheLoadedPages(false) // The lazy paginator caches generated pages by default but it's possible to disable this.
+            .WithActionOnCancellation(ActionOnStop.DeleteMessage) // Delete the message after pressing the stop emoji.
+            .WithActionOnTimeout(ActionOnStop.DeleteMessage) // Disable the input (buttons) after a timeout.
+            .WithFooter(PaginatorFooter.None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
+            .Build();
+
+        await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(10));
+
+        PageBuilder GeneratePage(int index)
         {
             var commandSummaries = string.Join(
                 Environment.NewLine,
-                module.Commands.Select(c => $"**{c.Name}**: {c.Summary?.AsItalic() ?? " mater ti jebem"}"));
+                modules[index].Commands.Select(c => $"**{c.Name ?? "balls"}**: {c.Summary?.AsItalic() ?? " mater ti jebem"}"));
 
-            embedBuilder.AddField(module.Name ?? "Commands", commandSummaries);
+            return new PageBuilder()
+                .WithAuthor(Context.User)
+                .WithTitle(modules[index].Name)
+                .WithDescription(modules[index].Summary ?? "Missing summary")
+                .AddField("Commands", commandSummaries);
         }
-
-        var embed = embedBuilder.Build();
-        await ReplyAsync(embed: embed);
     }
 
     [Command("ping")]
     [Summary("Performs a health check")]
     public async Task PingAsync()
     {
-        await ReplyAsync("pong");
-    }
-
-    [Group("prefix")]
-    [Summary("Prefix management")]
-    public sealed class PrefixCommands : ModuleBase
-    {
-        private readonly IAuditableOptionsSnapshot<DiscordOptions> _discordOptions;
-
-        public PrefixCommands(IAuditableOptionsSnapshot<DiscordOptions> discordOptions)
-        {
-            _discordOptions = discordOptions;
-        }
-
-        [Command]
-        [Alias("list", "l")]
-        public async Task ListPrefixesAsync()
-        {
-            var prefixes = string.Join(", ", _discordOptions.CurrentValue.CommandPrefixes);
-
-            var embed = new EmbedBuilder()
-                .WithFields(
-                    new EmbedFieldBuilder()
-                        .WithName("Server prefixes")
-                        .WithValue(prefixes))
-                .Build();
-
-            await ReplyAsync(embed: embed);
-        }
-
-        [Command("add")]
-        public async Task SetPrefixAsync(string prefix)
-        {
-            _discordOptions.Update(
-                options => { options.CommandPrefixes.Add(prefix); });
-
-            await ReplyAsync($"'{prefix}' added");
-        }
+        var socketClient = (DiscordSocketClient)Context.Client;
+        await ReplyAsync($"Pong: {socketClient.Latency} ms");
     }
 }

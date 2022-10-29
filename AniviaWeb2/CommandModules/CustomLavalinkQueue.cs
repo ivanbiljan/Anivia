@@ -33,7 +33,17 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _currentIndex = 0;
     }
 
-    public void SkipTracks(int numberOfTracks) => _currentIndex += numberOfTracks;
+    public void SkipTracks(int numberOfTracks) => JumpToTrack(_currentIndex + numberOfTracks);
+
+    public void JumpToTrack(int index)
+    {
+        if (index < 0 || index >= _tracks.Count)
+        {
+            return;
+        }
+
+        _currentIndex = index;
+    }
 
     public LavaTrack? GetNext()
     {
@@ -80,5 +90,14 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _tracks.RemoveAt(index);
 
         return track;
+    }
+
+    public void Shuffle()
+    {
+        for (var i = 0; i < _tracks.Count; ++i)
+        {
+            var randomTrackIndex = Random.Shared.Next(i, _tracks.Count - 1);
+            (_tracks[i], _tracks[randomTrackIndex]) = (_tracks[randomTrackIndex], _tracks[i]);
+        }
     }
 }

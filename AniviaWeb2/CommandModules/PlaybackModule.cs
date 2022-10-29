@@ -1,11 +1,11 @@
-﻿using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using Anivia.Extensions;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
+using Microsoft.VisualBasic.CompilerServices;
 using Victoria.Node;
 using Victoria.Player;
 using Victoria.Player.Filters;
@@ -36,18 +36,6 @@ public sealed class PlaybackModule : ModuleBase
     {
         _lavaNode = lavaNode;
         _interactiveService = interactiveService;
-    }
-
-    [Command("back")]
-    [Alias("b", "rewind")]
-    [Summary("Rewinds the current track by a number of seconds")]
-    [Remarks("back 10")]
-    public async Task BackAsync(int seconds)
-    {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-
-        var forwardedTimestamp = player.Track.Position.Subtract(TimeSpan.FromSeconds(seconds));
-        await player.SeekAsync(forwardedTimestamp);
     }
 
     [Command("bassboost")]
@@ -170,37 +158,6 @@ public sealed class PlaybackModule : ModuleBase
         }
     }
 
-    [Command("forward")]
-    [Alias("f")]
-    public async Task ForwardAsync(int seconds)
-    {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-
-        var forwardedTimestamp = player.Track.Position.Add(TimeSpan.FromSeconds(seconds));
-        await player.SeekAsync(forwardedTimestamp);
-    }
-
-    [Command("insert")]
-    [Summary("Insert a track right after the one that is currently playing")]
-    public async Task InsertAsync()
-    {
-    }
-
-    [Command("leave")]
-    [Summary("Makes me leave the voice channel")]
-    public async Task LeaveAsync()
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
-        await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
-    }
-
     [Command("loop current")]
     [Alias("loop", "repeat", "repeat current")]
     public async Task LoopCurrentSong()
@@ -285,29 +242,6 @@ public sealed class PlaybackModule : ModuleBase
         queue.Move(from, to);
 
         await ReplyAsync(embed: Embeds.Success("Track moved"));
-    }
-
-    [Command("pause")]
-    [Summary("Pauses the current track")]
-    public async Task PauseAsync()
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
-
-            return;
-        }
-
-        await player.PauseAsync();
     }
 
     [Command("play")]
@@ -418,6 +352,44 @@ public sealed class PlaybackModule : ModuleBase
         }
     }
 
+    [Command("join")]
+    [Summary("Makes me join your voice channel")]
+    public async Task JoinCurrentVoiceChannelAsync()
+    {
+        var voiceState = (IVoiceState)Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        await voiceState.VoiceChannel.ConnectAsync(true);
+        await ReplyAsync(embed: Embeds.Success("I have been summoned"));
+    }
+    
+    [Command("leave")]
+    [Summary("Makes me leave the voice channel")]
+    public async Task LeaveAsync()
+    {
+        var voiceState = (IVoiceState)Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+        
+        await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
+    }
+    
+    [Command("insert")]
+    [Summary("Insert a track right after the one that is currently playing")]
+    public async Task InsertAsync()
+    {
+        // TODO
+    }
+
     [Command("remove")]
     [Alias("rm", "delete", "del")]
     [Summary("Removes a track from the queue")]
@@ -444,71 +416,5 @@ public sealed class PlaybackModule : ModuleBase
         var track = queue.Remove(index - 1);
 
         await ReplyAsync(embed: Embeds.Success($"Removed track [{track.Title}]({track.Url})"));
-    }
-
-    [Command("resume")]
-    [Summary("Resumes the current track")]
-    public async Task ResumeAsync()
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
-
-            return;
-        }
-
-        await player.ResumeAsync();
-    }
-
-    [Command("seek")]
-    [Alias("wind to")]
-    public async Task SeekAsync(string timestamp)
-    {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (!TimeSpan.TryParse(timestamp, out var position))
-        {
-            await ReplyAsync(embed: Embeds.Error("Invalid timestamp"));
-
-            return;
-        }
-
-        await player.SeekAsync(position);
-    }
-
-    [Command("skip")]
-    [Summary("Skips the current track, or an arbitrary number of tracks")]
-    [Remarks("skip [number of tracks]")]
-    public async Task SkipAsync([Optional] int? numberOfTracks)
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
-        {
-            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
-
-            return;
-        }
-
-        if (numberOfTracks.HasValue)
-        {
-            player.GetQueue().SkipTracks(numberOfTracks.Value - 1);
-        }
-        
-        await player.StopAsync();
     }
 }

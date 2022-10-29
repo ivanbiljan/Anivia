@@ -20,13 +20,13 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Discord.Net.WebSocket" Version="3.8.1"/>
-		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1"/>
-		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.2"/>
+		<PackageReference Include="Discord.Net.WebSocket" Version="3.8.1" />
+		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="6.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.2" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Include="Logo.png" Pack="true" Visible="false" PackagePath=""/>
+		<None Include="Logo.png" Pack="true" Visible="false" PackagePath="" />
 	</ItemGroup>
 
 </Project>
