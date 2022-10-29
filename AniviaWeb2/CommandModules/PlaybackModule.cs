@@ -101,6 +101,7 @@ public sealed class PlaybackModule : ModuleBase
     }
 
     [Command("queue", RunMode = RunMode.Async)]
+    [Alias("q")]
     [Summary("Displays the current queue")]
     [Remarks("queue [page number]")]
     public async Task DisplayQueueAsync()
@@ -245,6 +246,7 @@ public sealed class PlaybackModule : ModuleBase
     }
 
     [Command("play")]
+    [Alias("p")]
     [Summary("Queue a track or playlist from a search term or url")]
     public async Task PlayAsync([Remainder] string song)
     {

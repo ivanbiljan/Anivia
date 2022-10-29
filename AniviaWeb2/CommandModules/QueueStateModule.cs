@@ -70,4 +70,27 @@ public sealed class QueueStateModule : ModuleBase
         await player.StopAsync();
         await ReplyAsync(embed: Embeds.Success($"Skipped to track at position {trackIndex}"));
     }
+
+    [Command("shuffle")]
+    public async Task ShuffleQueueAsync()
+    {
+        var voiceState = (IVoiceState)Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
+
+        player.GetQueue().Shuffle();
+
+        await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
+    }
 }
