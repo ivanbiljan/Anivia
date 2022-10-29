@@ -8,7 +8,7 @@ public static class RenderKeepAliveTask
 {
     private static readonly HttpClient HttpClient = new();
     private static readonly CancellationTokenSource CancellationTokenSource = new();
-    private static readonly PeriodicTimer Timer = new PeriodicTimer(TimeSpan.FromSeconds(15));
+    private static readonly PeriodicTimer Timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
     private static Task? _handler;
 
     public static void Start(DiscordSocketClient discordSocketClient) =>
