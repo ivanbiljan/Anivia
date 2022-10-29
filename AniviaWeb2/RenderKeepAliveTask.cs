@@ -4,21 +4,21 @@ using Discord.WebSocket;
 
 namespace Anivia;
 
-public static class RenderKeepAliveTask
+public class RenderKeepAliveTask : BackgroundService
 {
-    private static readonly HttpClient HttpClient = new();
-    private static readonly CancellationTokenSource CancellationTokenSource = new();
-    private static readonly PeriodicTimer Timer = new PeriodicTimer(TimeSpan.FromMinutes(1));
-    private static Task? _handler;
+    private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(59));
+    private readonly HttpClient _httpClient;
 
-    public static void Start(DiscordSocketClient discordSocketClient) =>
-        _handler = RenderKeepAliveAsync(discordSocketClient);
-    
-    private static async Task RenderKeepAliveAsync(DiscordSocketClient discordSocketClient)
+    public RenderKeepAliveTask(IHttpClientFactory httpClientFactory)
     {
-        while (await Timer.WaitForNextTickAsync(CancellationTokenSource.Token))
+        _httpClient = httpClientFactory.CreateClient();
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        while (await _timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
         {
-            var response = await HttpClient.GetAsync("https://anivia.onrender.com");
+            var response = await _httpClient.GetAsync("https://anivia.onrender.com");
             Console.WriteLine($"Render ping returned {response.StatusCode}");
         }
     }

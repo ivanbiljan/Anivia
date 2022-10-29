@@ -14,6 +14,7 @@ using Victoria.Node;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpClient();
+builder.Services.AddHostedService<RenderKeepAliveTask>();
 
 builder.Services.ConfigureAuditableOptions<DiscordOptions>(
     builder.Configuration.GetSection(DiscordOptions.SectionName));
@@ -210,8 +211,6 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
     await lavaNode.LeaveAsync(player.VoiceChannel);
     await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
 };
-
-RenderKeepAliveTask.Start(client);
 
 var options = builder.Configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();
 await client.LoginAsync(TokenType.Bot, options.BotToken);
