@@ -1,4 +1,4 @@
-namespace Victoria.Player; 
+namespace Victoria.Player;
 
 /// <summary>
 ///     Specifies the reason for why the track ended.

@@ -13,7 +13,7 @@ using Victoria.Node;
 using Victoria.Player;
 using Victoria.Resolvers;
 
-namespace Victoria; 
+namespace Victoria;
 
 /// <summary>
 ///     Additional extension methods to make workflow easier.

@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Victoria.Player;
 
-namespace Victoria.Resolvers; 
+namespace Victoria.Resolvers;
 
 /// <summary>
 ///     Resolver for fetching track artwork.

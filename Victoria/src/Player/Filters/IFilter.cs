@@ -1,4 +1,4 @@
-namespace Victoria.Player.Filters; 
+namespace Victoria.Player.Filters;
 
 /// <summary>
 /// </summary>

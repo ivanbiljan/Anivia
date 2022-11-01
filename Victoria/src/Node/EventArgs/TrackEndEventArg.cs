@@ -1,6 +1,6 @@
 using Victoria.Player;
 
-namespace Victoria.Node.EventArgs; 
+namespace Victoria.Node.EventArgs;
 
 /// <summary>
 /// </summary>

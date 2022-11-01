@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Victoria.Player.Filters; 
+namespace Victoria.Player.Filters;
 
 /// <summary>
 ///     Mixes both channels (left and right), with a configurable factor on how much each channel affects the other.

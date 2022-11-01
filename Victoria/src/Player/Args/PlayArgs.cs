@@ -1,6 +1,6 @@
 using System;
 
-namespace Victoria.Player.Args; 
+namespace Victoria.Player.Args;
 
 /// <summary>
 ///     Arguments for <see cref="LavaPlayer.PlayAsync" />

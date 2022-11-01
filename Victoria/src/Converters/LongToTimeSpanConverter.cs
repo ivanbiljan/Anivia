@@ -2,7 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace Victoria.Converters; 
+namespace Victoria.Converters;
 
 internal sealed class LongToTimeSpanConverter : JsonConverter<TimeSpan> {
     public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {

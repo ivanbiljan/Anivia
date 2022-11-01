@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Victoria.Player.Filters; 
+namespace Victoria.Player.Filters;
 
 /// <summary>
 ///     Higher frequencies get suppressed, while lower frequencies pass through this filter, thus the name low pass.

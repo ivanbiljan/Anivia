@@ -4,7 +4,7 @@ using Victoria.Converters;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
 
-namespace Victoria.Node.EventArgs; 
+namespace Victoria.Node.EventArgs;
 
 /// <summary>
 /// </summary>

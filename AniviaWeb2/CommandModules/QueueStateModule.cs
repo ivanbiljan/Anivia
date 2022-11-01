@@ -17,6 +17,29 @@ public sealed class QueueStateModule : ModuleBase
         _lavaNode = lavaNode;
     }
 
+    [Command("shuffle")]
+    public async Task ShuffleQueueAsync()
+    {
+        var voiceState = (IVoiceState)Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
+
+        player.GetQueue().Shuffle();
+
+        await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
+    }
+
     [Command("skip")]
     [Summary("Skips the current track, or an arbitrary number of tracks")]
     [Remarks("skip [number of tracks]")]
@@ -41,10 +64,10 @@ public sealed class QueueStateModule : ModuleBase
         {
             player.GetQueue().SkipTracks(numberOfTracks.Value - 1);
         }
-        
+
         await player.StopAsync();
     }
-    
+
     [Command("skip to")]
     [Summary("Skips to the desired track")]
     [Remarks("skip <position>")]
@@ -69,28 +92,5 @@ public sealed class QueueStateModule : ModuleBase
 
         await player.StopAsync();
         await ReplyAsync(embed: Embeds.Success($"Skipped to track at position {trackIndex}"));
-    }
-
-    [Command("shuffle")]
-    public async Task ShuffleQueueAsync()
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
-        {
-            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
-
-            return;
-        }
-
-        player.GetQueue().Shuffle();
-
-        await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
     }
 }

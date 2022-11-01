@@ -1,9 +1,4 @@
-﻿using System.Reflection;
-using Anivia.Options;
-using Discord.Commands;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+﻿using Anivia.Options;
 using Microsoft.Extensions.Options;
 
 namespace Anivia.Extensions;

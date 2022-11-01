@@ -1,5 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Runtime.InteropServices;
+﻿using System.Runtime.InteropServices;
 using System.Text.Json;
 using Anivia.Extensions;
 using Anivia.Options;
@@ -10,16 +9,16 @@ using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using GScraper.Google;
 using Microsoft.Extensions.Options;
-using Victoria.Node;
 
 namespace Anivia.CommandModules;
 
 [Name("Misc")]
 public sealed class MiscellaneousModule : ModuleBase
 {
+    private static readonly GoogleScraper Scraper = new();
     private readonly CommandService _commandService;
-    private readonly InteractiveService _interactiveService;
     private readonly DiscordOptions _discordOptions;
+    private readonly InteractiveService _interactiveService;
     private readonly LavalinkOptions _lavalinkOptions;
 
     public MiscellaneousModule(
@@ -57,60 +56,7 @@ public sealed class MiscellaneousModule : ModuleBase
 
         await ReplyAsync(serialized);
     }
-    
-    private static readonly GoogleScraper Scraper = new();
-    
-    // Sends a lazy paginator that displays images and uses more options.
-    [Command("img", RunMode = RunMode.Async)]
-    public async Task ImgAsync(string query = "discord")
-    {
-        // Get images from Google Images.
-        var images = (await Scraper.GetImagesAsync(query)).ToList();
 
-        var paginator = new LazyPaginatorBuilder()
-            .AddUser(Context.User)
-            .WithPageFactory(GeneratePage)
-            .WithMaxPageIndex(images.Count - 1) // You must specify the max. index the page factory can go.
-            .AddOption(new Emoji("◀"), PaginatorAction.Backward) // Use different emojis and option order.
-            .AddOption(new Emoji("▶"), PaginatorAction.Forward)
-            .AddOption(new Emoji("🔢"), PaginatorAction.Jump) // Use the jump feature
-            .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
-            .WithCacheLoadedPages(false) // The lazy paginator caches generated pages by default but it's possible to disable this.
-            .WithActionOnCancellation(ActionOnStop.DeleteMessage) // Delete the message after pressing the stop emoji.
-            .WithActionOnTimeout(ActionOnStop.DisableInput) // Disable the input (buttons) after a timeout.
-            .WithFooter(PaginatorFooter.None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
-            .Build();
-
-        await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(10));
-
-        PageBuilder GeneratePage(int index)
-        {
-            return new PageBuilder()
-                .WithAuthor(Context.User)
-                .WithTitle(images[index].Title)
-                .WithUrl(images[index].SourceUrl)
-                .WithDescription("Image paginator example")
-                .WithImageUrl(images[index].Url)
-                .WithFooter($"Page {index + 1}/{images.Count}");
-        }
-    }
-
-    [Command("reaction", RunMode = RunMode.Async)]
-    public async Task NextReactionAsync()
-    {
-        var msg = await ReplyAsync("Add a reaction to this message.");
-
-        // Wait for a reaction in the message.
-        var result = await _interactiveService.NextReactionAsync(x => x.MessageId == msg.Id, timeout: TimeSpan.FromSeconds(30));
-
-        await msg.ModifyAsync(x =>
-        {
-            x.Content = result.IsSuccess ? $"{MentionUtils.MentionUser(result.Value!.UserId)} reacted: {result.Value.Emote}" : $"Failed to get reaction. Status: {result.Status}";
-            x.AllowedMentions = AllowedMentions.None;
-            x.Embeds = Array.Empty<Embed>(); // workaround for d.net bug
-        });
-    }
-    
     [Command("help", RunMode = RunMode.Async)]
     [Summary("Help command")]
     [Remarks("help [command]")]
@@ -143,7 +89,7 @@ public sealed class MiscellaneousModule : ModuleBase
         }
 
         var modules = _commandService.Modules.ToList();
-        
+
         var paginator = new LazyPaginatorBuilder()
             .AddUser(Context.User)
             .WithPageFactory(GeneratePage)
@@ -151,10 +97,13 @@ public sealed class MiscellaneousModule : ModuleBase
             .AddOption(new Emoji("◀"), PaginatorAction.Backward) // Use different emojis and option order.
             .AddOption(new Emoji("▶"), PaginatorAction.Forward)
             .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
-            .WithCacheLoadedPages(false) // The lazy paginator caches generated pages by default but it's possible to disable this.
+            .WithCacheLoadedPages(
+                false) // The lazy paginator caches generated pages by default but it's possible to disable this.
             .WithActionOnCancellation(ActionOnStop.DeleteMessage) // Delete the message after pressing the stop emoji.
             .WithActionOnTimeout(ActionOnStop.DeleteMessage) // Disable the input (buttons) after a timeout.
-            .WithFooter(PaginatorFooter.None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
+            .WithFooter(
+                PaginatorFooter
+                    .None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
             .Build();
 
         await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(10));
@@ -163,7 +112,8 @@ public sealed class MiscellaneousModule : ModuleBase
         {
             var commandSummaries = string.Join(
                 Environment.NewLine,
-                modules[index].Commands.Select(c => $"**{c.Name ?? "balls"}**: {c.Summary?.AsItalic() ?? " mater ti jebem"}"));
+                modules[index].Commands.Select(
+                    c => $"**{c.Name ?? "balls"}**: {c.Summary?.AsItalic() ?? " mater ti jebem"}"));
 
             return new PageBuilder()
                 .WithAuthor(Context.User)
@@ -171,6 +121,65 @@ public sealed class MiscellaneousModule : ModuleBase
                 .WithDescription(modules[index].Summary ?? "Missing summary")
                 .AddField("Commands", commandSummaries);
         }
+    }
+
+    // Sends a lazy paginator that displays images and uses more options.
+    [Command("img", RunMode = RunMode.Async)]
+    public async Task ImgAsync(string query = "discord")
+    {
+        // Get images from Google Images.
+        var images = (await Scraper.GetImagesAsync(query)).ToList();
+
+        var paginator = new LazyPaginatorBuilder()
+            .AddUser(Context.User)
+            .WithPageFactory(GeneratePage)
+            .WithMaxPageIndex(images.Count - 1) // You must specify the max. index the page factory can go.
+            .AddOption(new Emoji("◀"), PaginatorAction.Backward) // Use different emojis and option order.
+            .AddOption(new Emoji("▶"), PaginatorAction.Forward)
+            .AddOption(new Emoji("🔢"), PaginatorAction.Jump) // Use the jump feature
+            .AddOption(new Emoji("🛑"), PaginatorAction.Exit)
+            .WithCacheLoadedPages(
+                false) // The lazy paginator caches generated pages by default but it's possible to disable this.
+            .WithActionOnCancellation(ActionOnStop.DeleteMessage) // Delete the message after pressing the stop emoji.
+            .WithActionOnTimeout(ActionOnStop.DisableInput) // Disable the input (buttons) after a timeout.
+            .WithFooter(
+                PaginatorFooter
+                    .None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
+            .Build();
+
+        await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(10));
+
+        PageBuilder GeneratePage(int index)
+        {
+            return new PageBuilder()
+                .WithAuthor(Context.User)
+                .WithTitle(images[index].Title)
+                .WithUrl(images[index].SourceUrl)
+                .WithDescription("Image paginator example")
+                .WithImageUrl(images[index].Url)
+                .WithFooter($"Page {index + 1}/{images.Count}");
+        }
+    }
+
+    [Command("reaction", RunMode = RunMode.Async)]
+    public async Task NextReactionAsync()
+    {
+        var msg = await ReplyAsync("Add a reaction to this message.");
+
+        // Wait for a reaction in the message.
+        var result = await _interactiveService.NextReactionAsync(
+            x => x.MessageId == msg.Id,
+            timeout: TimeSpan.FromSeconds(30));
+
+        await msg.ModifyAsync(
+            x =>
+            {
+                x.Content = result.IsSuccess
+                    ? $"{MentionUtils.MentionUser(result.Value!.UserId)} reacted: {result.Value.Emote}"
+                    : $"Failed to get reaction. Status: {result.Status}";
+                x.AllowedMentions = AllowedMentions.None;
+                x.Embeds = Array.Empty<Embed>(); // workaround for d.net bug
+            });
     }
 
     [Command("ping")]

@@ -1,7 +1,7 @@
 using Victoria.Player;
 using Victoria.Responses;
 
-namespace Victoria.Node.EventArgs; 
+namespace Victoria.Node.EventArgs;
 
 /// <summary>
 /// </summary>

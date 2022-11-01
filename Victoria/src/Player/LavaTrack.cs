@@ -2,7 +2,7 @@ using System;
 using System.Text.Json.Serialization;
 using Victoria.Converters;
 
-namespace Victoria.Player; 
+namespace Victoria.Player;
 
 /// <summary>
 ///     Track information.

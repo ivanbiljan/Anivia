@@ -1,4 +1,4 @@
-﻿namespace Victoria.Payloads; 
+﻿namespace Victoria.Payloads;
 
 internal record VoiceState {
     /// <summary>

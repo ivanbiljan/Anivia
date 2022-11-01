@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Victoria.WebSocket; 
+namespace Victoria.WebSocket;
 
 /// <summary>
 /// </summary>

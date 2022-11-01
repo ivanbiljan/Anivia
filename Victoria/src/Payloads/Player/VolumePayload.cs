@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads.Player; 
+namespace Victoria.Payloads.Player;
 
 internal sealed class VolumePayload : AbstractPlayerPayload {
     public VolumePayload(ulong guildId, int volume) : base(guildId, "volume") {

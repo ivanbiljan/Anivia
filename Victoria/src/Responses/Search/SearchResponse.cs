@@ -4,7 +4,7 @@ using Victoria.Converters;
 using Victoria.Player;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-namespace Victoria.Responses.Search; 
+namespace Victoria.Responses.Search;
 
 /// <summary>
 /// </summary>

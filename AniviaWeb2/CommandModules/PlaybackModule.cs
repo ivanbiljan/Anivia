@@ -2,10 +2,8 @@
 using Anivia.Extensions;
 using Discord;
 using Discord.Commands;
-using Discord.WebSocket;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
-using Microsoft.VisualBasic.CompilerServices;
 using Victoria.Node;
 using Victoria.Player;
 using Victoria.Player.Filters;
@@ -29,8 +27,9 @@ public sealed class PlaybackModule : ModuleBase
     private static readonly Regex LinkRegex = new(
         "(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_\\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?");
 
-    private readonly LavaNode _lavaNode;
     private readonly InteractiveService _interactiveService;
+
+    private readonly LavaNode _lavaNode;
 
     public PlaybackModule(LavaNode lavaNode, InteractiveService interactiveService)
     {
@@ -107,7 +106,7 @@ public sealed class PlaybackModule : ModuleBase
     public async Task DisplayQueueAsync()
     {
         const int tracksPerPage = 10;
-        
+
         if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -123,7 +122,7 @@ public sealed class PlaybackModule : ModuleBase
             return;
         }
 
-        var maxPages = (int) Math.Ceiling((double)queue.Length / tracksPerPage);
+        var maxPages = (int)Math.Ceiling((double)queue.Length / tracksPerPage);
 
         var paginator = new LazyPaginatorBuilder()
             .WithUsers(Context.User)
@@ -134,10 +133,13 @@ public sealed class PlaybackModule : ModuleBase
             .AddOption(new Emoji("▶"), PaginatorAction.Forward)
             .AddOption(new Emoji("⏩"), PaginatorAction.SkipToEnd)
             .AddOption(new Emoji("🔢"), PaginatorAction.Jump) // Use the jump feature
-            .WithCacheLoadedPages(false) // The lazy paginator caches generated pages by default but it's possible to disable this.
+            .WithCacheLoadedPages(
+                false) // The lazy paginator caches generated pages by default but it's possible to disable this.
             .WithActionOnCancellation(ActionOnStop.DeleteMessage) // Delete the message after pressing the stop emoji.
             .WithActionOnTimeout(ActionOnStop.DeleteInput) // Disable the input (buttons) after a timeout.
-            .WithFooter(PaginatorFooter.None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
+            .WithFooter(
+                PaginatorFooter
+                    .None) // Do not override the page footer. This allows us to write our own page footer in the page factory.
             .Build();
 
         await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(3));
@@ -153,10 +155,48 @@ public sealed class PlaybackModule : ModuleBase
                         Environment.NewLine,
                         tracks.Select(
                             (track, ix) =>
-                                $"{(track == queue.Current ? "🎶 " : string.Empty)}{(index * tracksPerPage) + ix + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})")))
+                                $"{(track == queue.Current ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})")))
                 .WithFooter(
                     $"Current track: {player.Track.Title} [{player.Track.Position.ToShortString()} / {player.Track.Duration.ToShortString()}]");
         }
+    }
+
+    [Command("insert")]
+    [Summary("Insert a track right after the one that is currently playing")]
+    public async Task InsertAsync()
+    {
+        // TODO
+    }
+
+    [Command("join")]
+    [Summary("Makes me join your voice channel")]
+    public async Task JoinCurrentVoiceChannelAsync()
+    {
+        var voiceState = (IVoiceState)Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        await voiceState.VoiceChannel.ConnectAsync(true);
+        await ReplyAsync(embed: Embeds.Success("I have been summoned"));
+    }
+
+    [Command("leave")]
+    [Summary("Makes me leave the voice channel")]
+    public async Task LeaveAsync()
+    {
+        var voiceState = (IVoiceState)Context.User;
+        if (voiceState.VoiceChannel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
+
+            return;
+        }
+
+        await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
     }
 
     [Command("loop current")]
@@ -343,53 +383,15 @@ public sealed class PlaybackModule : ModuleBase
 
                     await ReplyAsync(embed: embed);
                 }
-                
+
                 break;
             }
         }
-        
+
         if (player.PlayerState is PlayerState.None or PlayerState.Stopped)
         {
             await player.PlayAsync(queue.GetNext());
         }
-    }
-
-    [Command("join")]
-    [Summary("Makes me join your voice channel")]
-    public async Task JoinCurrentVoiceChannelAsync()
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
-        await voiceState.VoiceChannel.ConnectAsync(true);
-        await ReplyAsync(embed: Embeds.Success("I have been summoned"));
-    }
-    
-    [Command("leave")]
-    [Summary("Makes me leave the voice channel")]
-    public async Task LeaveAsync()
-    {
-        var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-        
-        await _lavaNode.LeaveAsync(voiceState.VoiceChannel);
-    }
-    
-    [Command("insert")]
-    [Summary("Insert a track right after the one that is currently playing")]
-    public async Task InsertAsync()
-    {
-        // TODO
     }
 
     [Command("remove")]

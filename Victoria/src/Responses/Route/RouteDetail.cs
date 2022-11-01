@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 
-namespace Victoria.Responses.Route; 
+namespace Victoria.Responses.Route;
 
 /// <summary>
 /// </summary>

@@ -1,7 +1,7 @@
 using System.Text.Json.Serialization;
 
 // ReSharper disable UnusedAutoPropertyAccessor.Local
-namespace Victoria.Responses; 
+namespace Victoria.Responses;
 
 /// <summary>
 ///     If LoadStatus was LoadFailed then Exception is returned.

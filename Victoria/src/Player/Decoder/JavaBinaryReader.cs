@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-namespace Victoria.Player.Decoder; 
+namespace Victoria.Player.Decoder;
 
 internal ref struct JavaBinaryReader {
     private readonly Span<byte> _bytes;

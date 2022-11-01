@@ -3,7 +3,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Victoria.Responses.Search;
 
-namespace Victoria.Converters; 
+namespace Victoria.Converters;
 
 internal sealed class SearchStatusConverter : JsonConverter<SearchStatus> {
     public override SearchStatus Read(

@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Victoria.Player.Filters; 
+namespace Victoria.Player.Filters;
 
 /// <summary>
 ///     Rotates the sound around the stereo channels/user headphones aka Audio Panning.

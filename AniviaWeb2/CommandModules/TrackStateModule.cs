@@ -15,7 +15,7 @@ public sealed class TrackStateModule : ModuleBase
     {
         _lavaNode = lavaNode;
     }
-    
+
     [Command("pause")]
     [Summary("Pauses the current track")]
     public async Task PauseCurrentTrackAsync()
@@ -41,7 +41,7 @@ public sealed class TrackStateModule : ModuleBase
             embed: Embeds.Success(
                 $"Track has been paused at {player.Track.Position.ToShortString().AsBold()} :pause_button:"));
     }
-    
+
     [Command("resume")]
     [Summary("Resumes the current track")]
     public async Task ResumeCurrentTrackAsync()
@@ -65,37 +65,7 @@ public sealed class TrackStateModule : ModuleBase
         await player.ResumeAsync();
         await ReplyAsync(embed: Embeds.Success("Track has been resumed :play_pause:"));
     }
-    
-    [Command("forward")]
-    [Alias("f")]
-    public async Task WindCurrentTrackForwardAsync(int seconds)
-    {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
 
-        var forwardedTimestamp = player.Track.Position.Add(TimeSpan.FromSeconds(seconds));
-        await player.SeekAsync(forwardedTimestamp);
-
-        await ReplyAsync(
-            embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :fast_forward:"));
-    }
-    
-    [Command("backward")]
-    [Alias("back", "b", "rewind")]
-    [Summary("Rewinds the current track by a number of seconds")]
-    [Remarks("back 10")]
-    public async Task WindCurrentTrackBackwardsAsync(int seconds)
-    {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-
-        var forwardedTimestamp = player.Track.Position.Subtract(TimeSpan.FromSeconds(seconds));
-        await player.SeekAsync(forwardedTimestamp);
-        
-        await ReplyAsync(
-            embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :rewind:"));
-    }
-    
     [Command("seek")]
     [Alias("wind to")]
     public async Task SeekAsync(string timestamp)
@@ -109,9 +79,39 @@ public sealed class TrackStateModule : ModuleBase
         }
 
         await player.SeekAsync(position);
-        
+
         await ReplyAsync(
             embed: Embeds.Success(
                 $"Track has been wound to {position.ToShortString()}/{player.Track.Duration}"));
+    }
+
+    [Command("backward")]
+    [Alias("back", "b", "rewind")]
+    [Summary("Rewinds the current track by a number of seconds")]
+    [Remarks("back 10")]
+    public async Task WindCurrentTrackBackwardsAsync(int seconds)
+    {
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+
+        var forwardedTimestamp = player.Track.Position.Subtract(TimeSpan.FromSeconds(seconds));
+        await player.SeekAsync(forwardedTimestamp);
+
+        await ReplyAsync(
+            embed: Embeds.Success(
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :rewind:"));
+    }
+
+    [Command("forward")]
+    [Alias("f")]
+    public async Task WindCurrentTrackForwardAsync(int seconds)
+    {
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+
+        var forwardedTimestamp = player.Track.Position.Add(TimeSpan.FromSeconds(seconds));
+        await player.SeekAsync(forwardedTimestamp);
+
+        await ReplyAsync(
+            embed: Embeds.Success(
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :fast_forward:"));
     }
 }

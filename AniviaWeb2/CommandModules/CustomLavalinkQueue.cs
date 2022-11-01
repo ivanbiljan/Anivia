@@ -33,18 +33,6 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _currentIndex = 0;
     }
 
-    public void SkipTracks(int numberOfTracks) => JumpToTrack(_currentIndex + numberOfTracks);
-
-    public void JumpToTrack(int index)
-    {
-        if (index < 0 || index >= _tracks.Count)
-        {
-            return;
-        }
-
-        _currentIndex = index;
-    }
-
     public LavaTrack? GetNext()
     {
         if (_currentIndex < _tracks.Count)
@@ -67,6 +55,16 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _currentIndex = 0;
 
         return Current = _tracks[_currentIndex++];
+    }
+
+    public void JumpToTrack(int index)
+    {
+        if (index < 0 || index >= _tracks.Count)
+        {
+            return;
+        }
+
+        _currentIndex = index;
     }
 
     public void Move(int fromIndex, int toIndex)
@@ -100,4 +98,6 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
             (_tracks[i], _tracks[randomTrackIndex]) = (_tracks[randomTrackIndex], _tracks[i]);
         }
     }
+
+    public void SkipTracks(int numberOfTracks) => JumpToTrack(_currentIndex + numberOfTracks);
 }

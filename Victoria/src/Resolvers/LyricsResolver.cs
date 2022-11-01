@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Victoria.Player;
 
-namespace Victoria.Resolvers; 
+namespace Victoria.Resolvers;
 
 /// <summary>
 ///     Lyrics resolver for fetching lyrics from Genius and OVH.

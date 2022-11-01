@@ -1,13 +1,9 @@
-﻿using System.Runtime.CompilerServices;
-using Discord;
-using Discord.WebSocket;
-
-namespace Anivia;
+﻿namespace Anivia;
 
 public class RenderKeepAliveTask : BackgroundService
 {
-    private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(59));
     private readonly HttpClient _httpClient;
+    private readonly PeriodicTimer _timer = new(TimeSpan.FromSeconds(59));
 
     public RenderKeepAliveTask(IHttpClientFactory httpClientFactory)
     {

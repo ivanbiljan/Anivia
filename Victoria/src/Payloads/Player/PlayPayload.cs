@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using Victoria.Player;
 using Victoria.Player.Args;
 
-namespace Victoria.Payloads.Player; 
+namespace Victoria.Payloads.Player;
 
 internal sealed class PlayPayload<TLavaTrack> : AbstractPlayerPayload
     where TLavaTrack : LavaTrack {

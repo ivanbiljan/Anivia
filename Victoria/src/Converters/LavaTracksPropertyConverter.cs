@@ -4,7 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Victoria.Player;
 
-namespace Victoria.Converters; 
+namespace Victoria.Converters;
 
 /// <summary>
 /// </summary>

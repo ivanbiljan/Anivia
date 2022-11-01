@@ -1,15 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Anivia", "Anivia\Anivia.csproj", "{6A3B60B8-C38E-4DDF-AC33-2E972617E7AE}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Victoria", "Victoria\src\Victoria.csproj", "{5F7CA317-2755-4CEE-B37E-32A18BD385BA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1D214165-AA4C-4616-BBC7-12C13AA968D0}"
 	ProjectSection(SolutionItems) = preProject
 		Dockerfile = Dockerfile
 	EndProjectSection
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AniviaWeb", "AniviaWeb\AniviaWeb.csproj", "{75620316-B9F8-4C72-8B4A-F91131725FBC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AniviaWeb2", "AniviaWeb2\AniviaWeb2.csproj", "{B330A51D-F4D2-46D2-884B-C6E3A8710BF3}"
 EndProject
@@ -19,18 +15,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{6A3B60B8-C38E-4DDF-AC33-2E972617E7AE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6A3B60B8-C38E-4DDF-AC33-2E972617E7AE}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6A3B60B8-C38E-4DDF-AC33-2E972617E7AE}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6A3B60B8-C38E-4DDF-AC33-2E972617E7AE}.Release|Any CPU.Build.0 = Release|Any CPU
 		{5F7CA317-2755-4CEE-B37E-32A18BD385BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{5F7CA317-2755-4CEE-B37E-32A18BD385BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5F7CA317-2755-4CEE-B37E-32A18BD385BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5F7CA317-2755-4CEE-B37E-32A18BD385BA}.Release|Any CPU.Build.0 = Release|Any CPU
-		{75620316-B9F8-4C72-8B4A-F91131725FBC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{75620316-B9F8-4C72-8B4A-F91131725FBC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{75620316-B9F8-4C72-8B4A-F91131725FBC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{75620316-B9F8-4C72-8B4A-F91131725FBC}.Release|Any CPU.Build.0 = Release|Any CPU
 		{B330A51D-F4D2-46D2-884B-C6E3A8710BF3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{B330A51D-F4D2-46D2-884B-C6E3A8710BF3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B330A51D-F4D2-46D2-884B-C6E3A8710BF3}.Release|Any CPU.ActiveCfg = Release|Any CPU

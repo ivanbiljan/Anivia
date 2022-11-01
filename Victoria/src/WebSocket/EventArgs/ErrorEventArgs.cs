@@ -1,6 +1,6 @@
 using System;
 
-namespace Victoria.WebSocket.EventArgs; 
+namespace Victoria.WebSocket.EventArgs;
 
 /// <summary>
 /// </summary>

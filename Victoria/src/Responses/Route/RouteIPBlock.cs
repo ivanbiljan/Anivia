@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Victoria.Responses.Route; 
+namespace Victoria.Responses.Route;
 
 /// <summary>
 ///     Represents the current IP address being used.

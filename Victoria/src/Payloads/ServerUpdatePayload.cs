@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads; 
+namespace Victoria.Payloads;
 
 internal sealed class ServerUpdatePayload : AbstractPayload {
     public ServerUpdatePayload() : base("voiceUpdate") { }

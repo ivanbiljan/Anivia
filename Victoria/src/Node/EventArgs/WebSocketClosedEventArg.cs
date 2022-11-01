@@ -1,6 +1,6 @@
 using Discord;
 
-namespace Victoria.Node.EventArgs; 
+namespace Victoria.Node.EventArgs;
 
 /// <summary>
 /// </summary>

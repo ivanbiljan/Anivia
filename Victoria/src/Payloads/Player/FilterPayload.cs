@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using Victoria.Player.Filters;
 
-namespace Victoria.Payloads.Player; 
+namespace Victoria.Payloads.Player;
 
 internal sealed class FilterPayload : AbstractPlayerPayload {
     public FilterPayload(ulong guildId, IFilter filter, double volume, IEnumerable<EqualizerBand> bands)

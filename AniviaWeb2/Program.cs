@@ -33,7 +33,7 @@ builder.Services.AddSingleton(
         })).AddSingleton<IDiscordClient>(provider => provider.GetRequiredService<DiscordSocketClient>());
 
 builder.Services.AddSingleton<CommandService>();
-            
+
 builder.Services.AddSingleton<InteractionService>();
 
 builder.Services.AddSingleton(
@@ -55,8 +55,6 @@ builder.Services.AddLavaNode(
     });
 
 var app = builder.Build();
-
-app.MapGet("/", () => "Hello World!");
 
 var commandService = app.Services.GetRequiredService<CommandService>();
 await commandService.AddModulesAsync(typeof(Program).Assembly, app.Services);
@@ -216,5 +214,6 @@ var options = builder.Configuration.GetSection(DiscordOptions.SectionName).Get<D
 await client.LoginAsync(TokenType.Bot, options.BotToken);
 await client.StartAsync();
 
+app.MapGet("/", () => "Hello World!");
 
 app.Run();

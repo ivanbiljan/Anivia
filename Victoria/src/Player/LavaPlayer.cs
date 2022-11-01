@@ -7,7 +7,7 @@ using Victoria.Player.Args;
 using Victoria.Player.Filters;
 using Victoria.WebSocket;
 
-namespace Victoria.Player; 
+namespace Victoria.Player;
 
 /// <summary>
 /// </summary>

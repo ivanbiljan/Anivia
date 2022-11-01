@@ -1,7 +1,7 @@
 using System;
 using Victoria.WebSocket;
 
-namespace Victoria.Node; 
+namespace Victoria.Node;
 
 /// <summary>
 ///     Configuration for <see cref="LavaNode" />

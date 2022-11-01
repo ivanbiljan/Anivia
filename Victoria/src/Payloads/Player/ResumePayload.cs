@@ -1,7 +1,7 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads.Player; 
+namespace Victoria.Payloads.Player;
 
 internal sealed class ResumePayload : AbstractPayload {
     public ResumePayload(string key, TimeSpan timeout) : base("configureResuming") {

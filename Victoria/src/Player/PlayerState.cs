@@ -1,4 +1,4 @@
-namespace Victoria.Player; 
+namespace Victoria.Player;
 
 /// <summary>
 ///     Describes status of <see cref="LavaPlayer" />.

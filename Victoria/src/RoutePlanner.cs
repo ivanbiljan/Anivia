@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using Victoria.Node;
 using Victoria.Responses.Route;
 
-namespace Victoria; 
+namespace Victoria;
 
 /// <summary>
 ///     Interacting with Lavalink's RoutePlanner API.

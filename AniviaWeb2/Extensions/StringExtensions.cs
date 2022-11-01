@@ -49,10 +49,8 @@ public static class StringExtensions
         return dp[source.Length, reference.Length];
     }
 
-    public static string WithUnderline(this string source) => $"__{DiscordMarkdownRegex.Replace(source, "\\$1")}__";
+    public static string ToShortString(this TimeSpan timeSpan) =>
+        timeSpan.Hours > 0 ? $"{timeSpan:hh\\:mm\\:ss}" : $"{timeSpan:mm\\:ss}";
 
-    public static string ToShortString(this TimeSpan timeSpan)
-    {
-        return timeSpan.Hours > 0 ? $"{timeSpan:hh\\:mm\\:ss}" : $"{timeSpan:mm\\:ss}";
-    }
+    public static string WithUnderline(this string source) => $"__{DiscordMarkdownRegex.Replace(source, "\\$1")}__";
 }

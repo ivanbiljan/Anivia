@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Victoria.Payloads; 
+namespace Victoria.Payloads;
 
 internal abstract class AbstractPayload {
     protected AbstractPayload(string op) {

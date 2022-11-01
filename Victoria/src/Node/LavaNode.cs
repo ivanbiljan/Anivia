@@ -22,7 +22,7 @@ using Victoria.WebSocket.EventArgs;
 
 // ReSharper disable SuggestBaseTypeForParameter
 
-namespace Victoria.Node; 
+namespace Victoria.Node;
 
 /// <summary>
 ///     Represents a single connection to a Lavalink server.

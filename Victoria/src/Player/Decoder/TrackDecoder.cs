@@ -7,7 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Victoria.Node;
 
-namespace Victoria.Player.Decoder; 
+namespace Victoria.Player.Decoder;
 
 /// <summary>
 ///     Helper class for decoding Lavalink's <see cref="LavaTrack" /> hash.
