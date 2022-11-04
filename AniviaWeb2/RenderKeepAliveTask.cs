@@ -14,7 +14,7 @@ public class RenderKeepAliveTask : BackgroundService
     {
         while (await _timer.WaitForNextTickAsync(stoppingToken) && !stoppingToken.IsCancellationRequested)
         {
-            var response = await _httpClient.GetAsync("https://anivia.onrender.com");
+            var response = await _httpClient.GetAsync("https://balls-hoth.onrender.com");
             Console.WriteLine($"Render ping returned {response.StatusCode}");
         }
     }
