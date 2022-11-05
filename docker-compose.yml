@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  anivia-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - DISCORD__BOTTOKEN=${DISCORD__BOTTOKEN}
+      - LAVALINK__HOST=host.docker.internal
+      - LAVALINK__PASSWORD=youshallnotpass
+      - LAVALINK__PORT=443
+      - LAVALINK__ISSL=false
+    depends_on:
+      - "lavalink-server"
+  lavalink-server:
+    image: fredboat/lavalink:master
+    ports:
+      - "443:8080"
+    environment:
+      - PORT=443
+      - LAVALINK__SERVER__PASSWORD=youshallnotpass
+      - LAVALINK__PASSWORD=youshallnotpass
+      - SERVER_PASSWORD=youshallnotpass
+      - PASSWORD=youshallnotpass
