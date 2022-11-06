@@ -7,7 +7,7 @@ services:
     ports:
       - "80:80"
     environment:
-      - DISCORD__BOTTOKEN=${DISCORD__BOTTOKEN}
+      - DISCORD__BOTTOKEN=MTAyODAyNDExNDc3MTkzNTMyMg.GtTyL_.8TeZTAo7NZlAPPLVhSTIPyXjGSbQ2Ygrc83dGE
       - LAVALINK__HOST=host.docker.internal
       - LAVALINK__PASSWORD=youshallnotpass
       - LAVALINK__PORT=443

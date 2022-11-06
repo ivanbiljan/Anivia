@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: anivia-web
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    branch: master
+  - type: web
+    name: lavalink-server
+    env: docker
+    plan: free
+    dockerfilePath:./lavalink-server/Dockerfile
+    dockerContext: ./lavalink-server
+    branch: master
