@@ -9,6 +9,6 @@ services:
     name: lavalink-server
     env: docker
     plan: free
-    dockerfilePath:./lavalink-server/Dockerfile
+    dockerfilePath: ./lavalink-server/Dockerfile
     dockerContext: ./lavalink-server
     branch: master
