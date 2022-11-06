@@ -1,6 +1,7 @@
 version: "3.9"
 services:
   anivia-web:
+    image: ivanbiljan/anivia
     build:
       context: .
       dockerfile: Dockerfile

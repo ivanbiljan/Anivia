@@ -101,7 +101,15 @@ client.Ready += async () =>
 {
     if (!lavaNode.IsConnected)
     {
-        await lavaNode.ConnectAsync();
+        try
+        {
+            Console.WriteLine("Connecting");
+            await lavaNode.ConnectAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
     }
 
     var interactionService = new InteractionService(client.Rest);
