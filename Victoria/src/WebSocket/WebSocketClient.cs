@@ -33,7 +33,7 @@ public sealed class WebSocketClient : IAsyncDisposable {
 
         Host = new Uri(webSocketConfiguration.Endpoint);
         _webSocketConfiguration = webSocketConfiguration;
-        _webSocket = new ClientWebSocket();
+        _webSocket = new ClientWebSocket { Options = { KeepAliveInterval = TimeSpan.Zero } };
         _messageQueue = new ConcurrentQueue<byte[]>();
         _connectionTokenSource = new CancellationTokenSource();
     }
