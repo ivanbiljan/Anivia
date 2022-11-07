@@ -5,14 +5,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    extra_hosts:
+        - "host.docker.internal:host-gateway"
     ports:
       - "80:80"
-    environment:
-      - DISCORD__BOTTOKEN=MTAyODAyNDExNDc3MTkzNTMyMg.GqiDXf.B9zIVGE5-dVOGu1lVN54CmzHxbxECWtaSYzyD4
-      - LAVALINK__HOST=host.docker.internal
-      - LAVALINK__PASSWORD=youshallnotpass
-      - LAVALINK__PORT=443
-      - LAVALINK__ISSL=false
     depends_on:
       - "lavalink-server"
   lavalink-server:
