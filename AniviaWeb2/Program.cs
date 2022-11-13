@@ -70,7 +70,7 @@ lavaNode.OnTrackEnd += async args =>
     var queue = args.Player.GetQueue();
     if (queue.IsCurrentTrackLooped)
     {
-        await args.Player.PlayAsync(args.Track);
+        await args.Player.PlayAsync(queue.Current);
 
         return;
     }
