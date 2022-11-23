@@ -32,12 +32,12 @@ public sealed class PrefixModule : ModuleBase
         await ReplyAsync(embed: embed);
     }
 
-    // [Command("add")]
-    // public async Task SetPrefixAsync(string prefix)
-    // {
-    //     _discordOptions.Update(
-    //         options => { options.CommandPrefixes.Add(prefix); });
-    //
-    //     await ReplyAsync($"'{prefix}' added");
-    // }
+    [Command("add")]
+    public async Task SetPrefixAsync(string prefix)
+    {
+        _discordOptions.Update(
+            options => { options.CommandPrefixes.Add(prefix); });
+    
+        await ReplyAsync($"'{prefix}' added");
+    }
 }

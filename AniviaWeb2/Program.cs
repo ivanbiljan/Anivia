@@ -14,7 +14,6 @@ using Victoria.Node;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddHttpClient();
-builder.Services.AddHostedService<RenderKeepAliveTask>();
 
 builder.Services.ConfigureAuditableOptions<DiscordOptions>(
     builder.Configuration.GetSection(DiscordOptions.SectionName));
