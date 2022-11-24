@@ -3,14 +3,12 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-ENV ASPNETCORE_ENVIRONMENT=Development
-
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
 WORKDIR /src
 COPY ["AniviaWeb2/AniviaWeb2.csproj", "AniviaWeb2/"]
-COPY ["AniviaWeb2/appsettings.Development.json", "AniviaWeb2/"]
 RUN dotnet restore "AniviaWeb2/AniviaWeb2.csproj"
 COPY . .
+COPY ["AniviaWeb2/appsettings.Development.json", "AniviaWeb2/appsettings.json"]
 WORKDIR "/src/AniviaWeb2"
 RUN dotnet build "AniviaWeb2.csproj" -c Release -o /app/build
 
