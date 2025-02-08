@@ -2,7 +2,7 @@
 using Anivia.Extensions;
 using Discord;
 using Discord.Commands;
-using Victoria.Node;
+using Victoria;
 
 namespace Anivia.CommandModules;
 
@@ -28,14 +28,15 @@ public sealed class QueueStateModule : ModuleBase
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
+        if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        player.GetQueue().Shuffle();
+        player.GetCustomQueue().Shuffle();
 
         await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
     }
@@ -53,7 +54,8 @@ public sealed class QueueStateModule : ModuleBase
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
+        if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
@@ -62,10 +64,10 @@ public sealed class QueueStateModule : ModuleBase
 
         if (numberOfTracks.HasValue)
         {
-            player.GetQueue().SkipTracks(numberOfTracks.Value - 1);
+            player.GetCustomQueue().SkipTracks(numberOfTracks.Value - 1);
         }
 
-        await player.StopAsync();
+        await player.StopAsync(_lavaNode, player.Track);
     }
 
     [Command("skip to")]
@@ -81,16 +83,17 @@ public sealed class QueueStateModule : ModuleBase
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
+        if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        player.GetQueue().JumpToTrack(trackIndex);
+        player.GetCustomQueue().JumpToTrack(trackIndex);
 
-        await player.StopAsync();
+        await player.StopAsync(_lavaNode, player.Track);
         await ReplyAsync(embed: Embeds.Success($"Skipped to track at position {trackIndex}"));
     }
 }

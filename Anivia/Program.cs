@@ -1,4 +1,3 @@
-using Anivia;
 using Anivia.CommandModules;
 using Anivia.Extensions;
 using Anivia.Options;
@@ -9,7 +8,7 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using Microsoft.Extensions.Options;
 using Victoria;
-using Victoria.Node;
+using Victoria.Enums;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,7 +50,8 @@ builder.Services.AddLavaNode(
         options.Port = lavalinkOptions.Port;
         options.Authorization = lavalinkOptions.Password;
         options.IsSecure = lavalinkOptions.IsSsl;
-    });
+    }
+);
 
 var app = builder.Build();
 
@@ -61,15 +61,20 @@ await commandService.AddModulesAsync(typeof(Program).Assembly, app.Services);
 var lavaNode = app.Services.GetRequiredService<LavaNode>();
 lavaNode.OnTrackEnd += async args =>
 {
-    if (!args.Player.IsConnected)
+    if (args.Reason is not TrackEndReason.Finished)
     {
         return;
     }
 
-    var queue = args.Player.GetQueue();
+    var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
+    var discordOptions = app.Services.GetRequiredService<IAuditableOptionsSnapshot<DiscordOptions>>().CurrentValue;
+    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId); 
+    var player = await lavaNode.GetPlayerAsync(args.GuildId);
+    var queue = player.GetCustomQueue();
+    
     if (queue.IsCurrentTrackLooped)
     {
-        await args.Player.PlayAsync(queue.Current);
+        await player.PlayAsync(lavaNode, queue.Current);
 
         return;
     }
@@ -77,13 +82,13 @@ lavaNode.OnTrackEnd += async args =>
     if (queue.Next is null && !queue.IsLooped)
     {
         queue.Clear();
-        await args.Player.TextChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
+        await textChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
 
         return;
     }
 
     var track = queue.GetNext()!;
-    await args.Player.PlayAsync(track);
+    await player.PlayAsync(lavaNode, track);
 };
 
 lavaNode.OnTrackStart += async args =>
@@ -92,7 +97,11 @@ lavaNode.OnTrackStart += async args =>
         .WithDescription($"Started playing [{args.Track.Title}]({args.Track.Url})")
         .Build();
 
-    await args.Player.TextChannel.SendMessageAsync(embed: embed);
+    var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
+    var discordOptions = app.Services.GetRequiredService<IAuditableOptionsSnapshot<DiscordOptions>>().CurrentValue;
+    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId); 
+
+    await textChannel.SendMessageAsync(embed: embed);
 };
 
 var client = app.Services.GetRequiredService<DiscordSocketClient>();
@@ -110,7 +119,7 @@ client.Ready += async () =>
             Console.WriteLine(ex);
         }
     }
-
+    
     var interactionService = new InteractionService(client.Rest);
     await interactionService.AddModulesAsync(typeof(Program).Assembly, app.Services);
     await interactionService.RegisterCommandsGloballyAsync();
@@ -190,20 +199,20 @@ client.MessageUpdated += async (_, message, _) =>
 
 client.UserVoiceStateUpdated += async (user, state, _) =>
 {
-    if (!lavaNode.TryGetPlayer(state.VoiceChannel.Guild, out var player))
+    var player = await lavaNode.GetPlayerAsync(state.VoiceChannel.Guild.Id);
+    if (player is null || player.VoiceState.SessionId != state.VoiceSessionId)
     {
         return;
     }
-
-    if (player.VoiceChannel.Id != state.VoiceChannel.Id)
-    {
-        return;
-    }
+    
+    var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
+    var discordOptions = app.Services.GetRequiredService<IAuditableOptionsSnapshot<DiscordOptions>>().CurrentValue;
+    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId); 
 
     if (user.Id == client.CurrentUser.Id)
     {
-        await lavaNode.LeaveAsync(player.VoiceChannel);
-        await player.TextChannel.SendMessageAsync(embed: Embeds.Error("I have been kicked from the voice channel"));
+        await lavaNode.LeaveAsync(state.VoiceChannel);
+        await textChannel.SendMessageAsync(embed: Embeds.Error("I have been kicked from the voice channel"));
 
         return;
     }
@@ -213,11 +222,11 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
         return;
     }
 
-    await lavaNode.LeaveAsync(player.VoiceChannel);
-    await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
+    await lavaNode.LeaveAsync(state.VoiceChannel);
+    await textChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
 };
 
-var options = builder.Configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();
+var options = builder.Configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>()!;
 await client.LoginAsync(TokenType.Bot, options.BotToken);
 await client.StartAsync();
 
