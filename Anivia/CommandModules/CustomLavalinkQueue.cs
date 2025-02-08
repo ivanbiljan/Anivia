@@ -19,13 +19,25 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
 
     public LavaTrack? Next => _currentIndex > _tracks.Count - 1 ? null : _tracks[_currentIndex];
 
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
 
-    public IEnumerator<LavaTrack> GetEnumerator() => _tracks.GetEnumerator();
+    public IEnumerator<LavaTrack> GetEnumerator()
+    {
+        return _tracks.GetEnumerator();
+    }
 
-    public void Add(LavaTrack track) => _tracks.Add(track);
+    public void Add(LavaTrack track)
+    {
+        _tracks.Add(track);
+    }
 
-    public void Add(IEnumerable<LavaTrack> tracks) => _tracks.AddRange(tracks);
+    public void Add(IEnumerable<LavaTrack> tracks)
+    {
+        _tracks.AddRange(tracks);
+    }
 
     public void Clear()
     {
@@ -75,7 +87,10 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _tracks.Insert(toIndex - 1, originalTrack);
     }
 
-    public void Remove(LavaTrack track) => _tracks.Remove(track);
+    public void Remove(LavaTrack track)
+    {
+        _tracks.Remove(track);
+    }
 
     public LavaTrack? Remove(int index)
     {
@@ -99,5 +114,8 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         }
     }
 
-    public void SkipTracks(int numberOfTracks) => JumpToTrack(_currentIndex + numberOfTracks);
+    public void SkipTracks(int numberOfTracks)
+    {
+        JumpToTrack(_currentIndex + numberOfTracks);
+    }
 }

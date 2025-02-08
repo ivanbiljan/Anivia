@@ -15,20 +15,25 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpClient();
 
 builder.Services.ConfigureAuditableOptions<DiscordOptions>(
-    builder.Configuration.GetSection(DiscordOptions.SectionName));
+    builder.Configuration.GetSection(DiscordOptions.SectionName)
+);
 
 builder.Services.ConfigureAuditableOptions<LavalinkOptions>(
-    builder.Configuration.GetSection(LavalinkOptions.SectionName));
+    builder.Configuration.GetSection(LavalinkOptions.SectionName)
+);
 
 builder.Services.AddSingleton(
-    _ => new DiscordSocketClient(
-        new DiscordSocketConfig
-        {
-            GatewayIntents = GatewayIntents.AllUnprivileged |
-                             GatewayIntents.MessageContent |
-                             GatewayIntents.GuildPresences |
-                             GatewayIntents.GuildMembers
-        })).AddSingleton<IDiscordClient>(provider => provider.GetRequiredService<DiscordSocketClient>());
+        _ => new DiscordSocketClient(
+            new DiscordSocketConfig
+            {
+                GatewayIntents = GatewayIntents.AllUnprivileged |
+                                 GatewayIntents.MessageContent |
+                                 GatewayIntents.GuildPresences |
+                                 GatewayIntents.GuildMembers
+            }
+        )
+    )
+    .AddSingleton<IDiscordClient>(provider => provider.GetRequiredService<DiscordSocketClient>());
 
 builder.Services.AddSingleton<CommandService>();
 
@@ -38,7 +43,8 @@ builder.Services.AddSingleton(
         new InteractiveConfig
         {
             DefaultTimeout = TimeSpan.FromMinutes(1)
-        })
+        }
+    )
     .AddSingleton<InteractiveService>();
 
 builder.Services.AddLavaNode(
@@ -68,10 +74,10 @@ lavaNode.OnTrackEnd += async args =>
 
     var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
     var discordOptions = app.Services.GetRequiredService<IAuditableOptionsSnapshot<DiscordOptions>>().CurrentValue;
-    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId); 
+    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId);
     var player = await lavaNode.GetPlayerAsync(args.GuildId);
     var queue = player.GetCustomQueue();
-    
+
     if (queue.IsCurrentTrackLooped)
     {
         await player.PlayAsync(lavaNode, queue.Current);
@@ -99,7 +105,7 @@ lavaNode.OnTrackStart += async args =>
 
     var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
     var discordOptions = app.Services.GetRequiredService<IAuditableOptionsSnapshot<DiscordOptions>>().CurrentValue;
-    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId); 
+    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId);
 
     await textChannel.SendMessageAsync(embed: embed);
 };
@@ -119,7 +125,7 @@ client.Ready += async () =>
             Console.WriteLine(ex);
         }
     }
-    
+
     var interactionService = new InteractionService(client.Rest);
     await interactionService.AddModulesAsync(typeof(Program).Assembly, app.Services);
     await interactionService.RegisterCommandsGloballyAsync();
@@ -143,11 +149,12 @@ client.MessageReceived += async message =>
     var argPos = 0;
 
     // Determine if the message is a command based on the prefix and make sure no bots trigger commands
-    var commandPrefixes = app.Services.GetRequiredService<IOptionsMonitor<DiscordOptions>>().CurrentValue
+    var commandPrefixes = app.Services.GetRequiredService<IOptionsMonitor<DiscordOptions>>()
+        .CurrentValue
         .CommandPrefixes;
 
-    if (!commandPrefixes.Any(p => socketUserMessage.HasStringPrefix(p, ref argPos)) &&
-        !socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argPos) ||
+    if ((!commandPrefixes.Any(p => socketUserMessage.HasStringPrefix(p, ref argPos)) &&
+         !socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argPos)) ||
         socketUserMessage.Author.IsBot)
     {
         return;
@@ -161,7 +168,8 @@ client.MessageReceived += async message =>
     var result = await commandService.ExecuteAsync(
         context,
         argPos,
-        app.Services);
+        app.Services
+    );
 };
 
 client.MessageUpdated += async (_, message, _) =>
@@ -176,11 +184,12 @@ client.MessageUpdated += async (_, message, _) =>
     var argPos = 0;
 
     // Determine if the message is a command based on the prefix and make sure no bots trigger commands
-    var commandPrefixes = app.Services.GetRequiredService<IOptionsMonitor<DiscordOptions>>().CurrentValue
+    var commandPrefixes = app.Services.GetRequiredService<IOptionsMonitor<DiscordOptions>>()
+        .CurrentValue
         .CommandPrefixes;
 
-    if (!commandPrefixes.Any(p => socketUserMessage.HasStringPrefix(p, ref argPos)) &&
-        !socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argPos) ||
+    if ((!commandPrefixes.Any(p => socketUserMessage.HasStringPrefix(p, ref argPos)) &&
+         !socketUserMessage.HasMentionPrefix(client.CurrentUser, ref argPos)) ||
         socketUserMessage.Author.IsBot)
     {
         return;
@@ -194,7 +203,8 @@ client.MessageUpdated += async (_, message, _) =>
     await commandService.ExecuteAsync(
         context,
         argPos,
-        app.Services);
+        app.Services
+    );
 };
 
 client.UserVoiceStateUpdated += async (user, state, _) =>
@@ -204,10 +214,10 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
     {
         return;
     }
-    
+
     var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
     var discordOptions = app.Services.GetRequiredService<IAuditableOptionsSnapshot<DiscordOptions>>().CurrentValue;
-    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId); 
+    var textChannel = (IMessageChannel) await discordClient.GetChannelAsync(discordOptions.TextChannelId);
 
     if (user.Id == client.CurrentUser.Id)
     {

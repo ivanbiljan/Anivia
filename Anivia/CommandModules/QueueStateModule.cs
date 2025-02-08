@@ -20,7 +20,7 @@ public sealed class QueueStateModule : ModuleBase
     [Command("shuffle")]
     public async Task ShuffleQueueAsync()
     {
-        var voiceState = (IVoiceState)Context.User;
+        var voiceState = (IVoiceState) Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -46,7 +46,7 @@ public sealed class QueueStateModule : ModuleBase
     [Remarks("skip [number of tracks]")]
     public async Task SkipAsync([Optional] int? numberOfTracks)
     {
-        var voiceState = (IVoiceState)Context.User;
+        var voiceState = (IVoiceState) Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -75,7 +75,7 @@ public sealed class QueueStateModule : ModuleBase
     [Remarks("skip <position>")]
     public async Task SkipToAsync(int trackIndex)
     {
-        var voiceState = (IVoiceState)Context.User;
+        var voiceState = (IVoiceState) Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));

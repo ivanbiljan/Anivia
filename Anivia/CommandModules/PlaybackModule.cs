@@ -5,7 +5,6 @@ using Discord.Commands;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using Victoria;
-using Victoria.Rest;
 using Victoria.Rest.Filters;
 using Victoria.Rest.Search;
 using YouTubeSearch;
@@ -95,7 +94,7 @@ public sealed class PlaybackModule : ModuleBase
 
             return;
         }
-        
+
         player.GetCustomQueue().Clear();
         await player.StopAsync(_lavaNode, player.Track);
 
@@ -318,12 +317,12 @@ public sealed class PlaybackModule : ModuleBase
         if (player is {State: {IsConnected: true}} && player.VoiceState.SessionId != voiceState.VoiceSessionId)
         {
             await ReplyAsync(embed: Embeds.Error("Music is already playing in another channel"));
-            
+
             return;
         }
-        
+
         player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
-        
+
         SearchResponse searchResponse;
         if (Uri.IsWellFormedUriString(song, UriKind.Absolute))
         {
@@ -337,7 +336,7 @@ public sealed class PlaybackModule : ModuleBase
             {
                 await ReplyAsync("No songs matched");
             }
-            
+
             searchResponse = await _lavaNode.LoadTrackAsync(firstMatch);
         }
 

@@ -20,7 +20,7 @@ public sealed class TrackStateModule : ModuleBase
     [Summary("Pauses the current track")]
     public async Task PauseCurrentTrackAsync()
     {
-        var voiceState = (IVoiceState)Context.User;
+        var voiceState = (IVoiceState) Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -39,14 +39,16 @@ public sealed class TrackStateModule : ModuleBase
         await player.PauseAsync(_lavaNode);
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been paused at {player.Track.Position.ToShortString().AsBold()} :pause_button:"));
+                $"Track has been paused at {player.Track.Position.ToShortString().AsBold()} :pause_button:"
+            )
+        );
     }
 
     [Command("resume")]
     [Summary("Resumes the current track")]
     public async Task ResumeCurrentTrackAsync()
     {
-        var voiceState = (IVoiceState)Context.User;
+        var voiceState = (IVoiceState) Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -77,7 +79,7 @@ public sealed class TrackStateModule : ModuleBase
 
             return;
         }
-        
+
         if (!TimeSpan.TryParse(timestamp, out var position))
         {
             await ReplyAsync(embed: Embeds.Error("Invalid timestamp"));
@@ -89,7 +91,9 @@ public sealed class TrackStateModule : ModuleBase
 
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {position.ToShortString()}/{player.Track.Duration}"));
+                $"Track has been wound to {position.ToShortString()}/{player.Track.Duration}"
+            )
+        );
     }
 
     [Command("backward")]
@@ -111,7 +115,9 @@ public sealed class TrackStateModule : ModuleBase
 
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :rewind:"));
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :rewind:"
+            )
+        );
     }
 
     [Command("forward")]
@@ -131,6 +137,8 @@ public sealed class TrackStateModule : ModuleBase
 
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :fast_forward:"));
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :fast_forward:"
+            )
+        );
     }
 }

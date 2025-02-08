@@ -26,7 +26,8 @@ public sealed class PrefixModule : ModuleBase
             .WithFields(
                 new EmbedFieldBuilder()
                     .WithName("Server prefixes")
-                    .WithValue(prefixes))
+                    .WithValue(prefixes)
+            )
             .Build();
 
         await ReplyAsync(embed: embed);
@@ -36,8 +37,9 @@ public sealed class PrefixModule : ModuleBase
     public async Task SetPrefixAsync(string prefix)
     {
         _discordOptions.Update(
-            options => { options.CommandPrefixes.Add(prefix); });
-    
+            options => { options.CommandPrefixes.Add(prefix); }
+        );
+
         await ReplyAsync($"'{prefix}' added");
     }
 }

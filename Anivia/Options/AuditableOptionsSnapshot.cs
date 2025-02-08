@@ -13,18 +13,25 @@ internal sealed class AuditableOptionsSnapshot<T> : IAuditableOptionsSnapshot<T>
     public AuditableOptionsSnapshot(
         IOptionsMonitor<T> optionsSnapshot,
         IConfigurationSection configurationSection,
-        IHostEnvironment hostEnvironment)
+        IHostEnvironment hostEnvironment
+    )
     {
         _optionsSnapshot = optionsSnapshot;
         _configurationSection = configurationSection;
         _hostEnvironment = hostEnvironment;
     }
 
-    public IDisposable OnChange(Action<T, string> listener) => throw new NotImplementedException();
+    public IDisposable OnChange(Action<T, string> listener)
+    {
+        throw new NotImplementedException();
+    }
 
     public T CurrentValue => _optionsSnapshot.CurrentValue;
 
-    public T Get(string name) => _optionsSnapshot.Get(name);
+    public T Get(string name)
+    {
+        return _optionsSnapshot.Get(name);
+    }
 
     public void Update(Action<T> updateAction)
     {

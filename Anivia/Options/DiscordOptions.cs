@@ -9,7 +9,7 @@ public sealed class DiscordOptions
     public string ClientId { get; set; }
 
     public string ClientSecret { get; set; }
-    
+
     public ulong TextChannelId { get; set; }
 
     public List<string> CommandPrefixes { get; set; } = new();
