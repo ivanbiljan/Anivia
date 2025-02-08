@@ -8,9 +8,7 @@ internal sealed class AuditableOptionsSnapshot<T>(
     IOptionsMonitor<T> optionsSnapshot,
     IConfigurationSection configurationSection,
     IHostEnvironment hostEnvironment
-)
-    : IAuditableOptionsSnapshot<T>
-    where T : class, new()
+) : IAuditableOptionsSnapshot<T> where T : class, new()
 {
     private readonly IOptionsMonitor<T> _optionsSnapshot = optionsSnapshot;
     private readonly IConfigurationSection _configurationSection = configurationSection;

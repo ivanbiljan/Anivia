@@ -3,7 +3,7 @@ services:
   anivia-web:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Anivia.Dockerfile
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -13,7 +13,7 @@ services:
   lavalink-server:
     build:
       context: .
-      dockerfile: Dockerfile2
+      dockerfile: LavalinkServer.Dockerfile
     ports:
       - "443:8080"
     environment:
