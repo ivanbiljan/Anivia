@@ -8,14 +8,9 @@ namespace Anivia.CommandModules;
 
 [Name("Queue State")]
 [Summary("Commands used for updating the state of the queue")]
-public sealed class QueueStateModule : ModuleBase
+public sealed class QueueStateModule(LavaNode lavaNode) : ModuleBase
 {
-    private readonly LavaNode _lavaNode;
-
-    public QueueStateModule(LavaNode lavaNode)
-    {
-        _lavaNode = lavaNode;
-    }
+    private readonly LavaNode _lavaNode = lavaNode;
 
     [Command("shuffle")]
     public async Task ShuffleQueueAsync()
