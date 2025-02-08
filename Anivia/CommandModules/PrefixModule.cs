@@ -7,14 +7,9 @@ namespace Anivia.CommandModules;
 [Name("Prefix")]
 [Group("prefix")]
 [Summary("Prefix related commands")]
-public sealed class PrefixModule : ModuleBase
+public sealed class PrefixModule(IAuditableOptionsSnapshot<DiscordOptions> discordOptions) : ModuleBase
 {
-    private readonly IAuditableOptionsSnapshot<DiscordOptions> _discordOptions;
-
-    public PrefixModule(IAuditableOptionsSnapshot<DiscordOptions> discordOptions)
-    {
-        _discordOptions = discordOptions;
-    }
+    private readonly IAuditableOptionsSnapshot<DiscordOptions> _discordOptions = discordOptions;
 
     [Command("list")]
     [Alias("l", "")]

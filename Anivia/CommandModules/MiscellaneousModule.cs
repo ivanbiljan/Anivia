@@ -13,26 +13,19 @@ using Microsoft.Extensions.Options;
 namespace Anivia.CommandModules;
 
 [Name("Misc")]
-public sealed class MiscellaneousModule : ModuleBase
+public sealed class MiscellaneousModule(
+    CommandService commandService,
+    IOptionsMonitor<DiscordOptions> discordOptions,
+    IOptionsMonitor<LavalinkOptions> lavalinkOptions,
+    InteractiveService interactiveService
+)
+    : ModuleBase
 {
     private static readonly GoogleScraper Scraper = new();
-    private readonly CommandService _commandService;
-    private readonly DiscordOptions _discordOptions;
-    private readonly InteractiveService _interactiveService;
-    private readonly LavalinkOptions _lavalinkOptions;
-
-    public MiscellaneousModule(
-        CommandService commandService,
-        IOptionsMonitor<DiscordOptions> discordOptions,
-        IOptionsMonitor<LavalinkOptions> lavalinkOptions,
-        InteractiveService interactiveService
-    )
-    {
-        _commandService = commandService;
-        _interactiveService = interactiveService;
-        _discordOptions = discordOptions.CurrentValue;
-        _lavalinkOptions = lavalinkOptions.CurrentValue;
-    }
+    private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
+    private readonly LavalinkOptions _lavalinkOptions = lavalinkOptions.CurrentValue;
+    private readonly CommandService _commandService = commandService;
+    private readonly InteractiveService _interactiveService = interactiveService;
 
     [Command("config")]
     [Summary("Displays the configuration")]

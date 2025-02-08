@@ -4,22 +4,17 @@ using Microsoft.Extensions.Options;
 
 namespace Anivia.Options;
 
-internal sealed class AuditableOptionsSnapshot<T> : IAuditableOptionsSnapshot<T> where T : class, new()
+internal sealed class AuditableOptionsSnapshot<T>(
+    IOptionsMonitor<T> optionsSnapshot,
+    IConfigurationSection configurationSection,
+    IHostEnvironment hostEnvironment
+)
+    : IAuditableOptionsSnapshot<T>
+    where T : class, new()
 {
-    private readonly IConfigurationSection _configurationSection;
-    private readonly IHostEnvironment _hostEnvironment;
-    private readonly IOptionsMonitor<T> _optionsSnapshot;
-
-    public AuditableOptionsSnapshot(
-        IOptionsMonitor<T> optionsSnapshot,
-        IConfigurationSection configurationSection,
-        IHostEnvironment hostEnvironment
-    )
-    {
-        _optionsSnapshot = optionsSnapshot;
-        _configurationSection = configurationSection;
-        _hostEnvironment = hostEnvironment;
-    }
+    private readonly IOptionsMonitor<T> _optionsSnapshot = optionsSnapshot;
+    private readonly IConfigurationSection _configurationSection = configurationSection;
+    private readonly IHostEnvironment _hostEnvironment = hostEnvironment;
 
     public IDisposable OnChange(Action<T, string> listener)
     {

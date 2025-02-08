@@ -12,8 +12,11 @@ using YouTubeSearch;
 namespace Anivia.CommandModules;
 
 [Name("Playback")]
-public sealed class PlaybackModule : ModuleBase
+public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interactiveService) : ModuleBase
 {
+    private readonly LavaNode _lavaNode = lavaNode;
+    private readonly InteractiveService _interactiveService = interactiveService;
+
     public enum BassBoost
     {
         Mute,
@@ -26,16 +29,6 @@ public sealed class PlaybackModule : ModuleBase
     private static readonly Regex LinkRegex = new(
         "(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_\\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?"
     );
-
-    private readonly InteractiveService _interactiveService;
-
-    private readonly LavaNode _lavaNode;
-
-    public PlaybackModule(LavaNode lavaNode, InteractiveService interactiveService)
-    {
-        _lavaNode = lavaNode;
-        _interactiveService = interactiveService;
-    }
 
     [Command("bassboost")]
     [Summary("Sets the bass boost")]
