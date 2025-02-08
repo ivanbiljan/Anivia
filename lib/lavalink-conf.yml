@@ -1,0 +1,40 @@
+server:
+  port: 2333
+  
+plugins:
+  youtube: # To read more about it's configuration visit https://github.com/lavalink-devs/youtube-source#plugin
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    clients: # We suggest using it like this, since it switches through the clients to get streams and search running
+      - M_WEB
+      - WEB
+      - MUSIC
+      - WEBEMBEDDED
+      - ANDROID_VR
+      - TV
+      - TVHTML5EMBEDDED
+    oauth: # Read https://github.com/lavalink-devs/youtube-source?tab=readme-ov-file#using-oauth-tokens for more information
+      enabled: false
+      skipInitialization: false # Set to true if you got your refresh token
+      # refreshToken: "" # Fill out after u got the refresh token
+    pot: # Read https://github.com/lavalink-devs/youtube-source?tab=readme-ov-file#using-a-potoken for more information or use this one
+      token: "CgtLYnJKeDl1N0pJMCjW2cO8BjIKCgJERRIEEgAgKg=="
+      visitorData: "MnRuJyEtJOv8LW4fImJbwY4qXcflEPdSWXwKWnQappnJt4Ee_3bFCJEUmiePXV3jvyjxMuT8pE3j-ZKoLtF-bIjo7-erKATkj38QRYgrGRsEHDC97Qk9a-tcYdXpmMQt2h6A1S325QgSsRfbfjBfBTeDq_oZBA=="
+
+lavalink:
+  plugins:
+    # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.11.4"
+      repository: "https://maven.lavalink.dev/releases" # use https://maven.lavalink.dev/snapshots if you want to use a snapshot version.
+  server:
+    password: "admin"
+    sources:
+      youtube: false
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: true
+      local: false

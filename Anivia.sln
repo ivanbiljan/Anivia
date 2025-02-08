@@ -9,6 +9,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Anivia", "src\Anivia\Anivia.csproj", "{B330A51D-F4D2-46D2-884B-C6E3A8710BF3}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "lib", "lib", "{8B5BF7A8-D9CD-4299-BA40-471E6B686F35}"
+	ProjectSection(SolutionItems) = preProject
+		lib\Lavalink.jar = lib\Lavalink.jar
+		lib\lavalink-conf.yml = lib\lavalink-conf.yml
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,5 +27,6 @@ Global
 		{B330A51D-F4D2-46D2-884B-C6E3A8710BF3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
+		{8B5BF7A8-D9CD-4299-BA40-471E6B686F35} = {1D214165-AA4C-4616-BBC7-12C13AA968D0}
 	EndGlobalSection
 EndGlobal

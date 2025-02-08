@@ -4,19 +4,17 @@ using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
-using Victoria;
-using Victoria.Rest.Filters;
-using Victoria.Rest.Search;
+using Victoria.Node;
+using Victoria.Player;
+using Victoria.Player.Filters;
+using Victoria.Responses.Search;
 using YouTubeSearch;
 
 namespace Anivia.CommandModules;
 
 [Name("Playback")]
-public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interactiveService) : ModuleBase
+public sealed class PlaybackModule : ModuleBase
 {
-    private readonly LavaNode _lavaNode = lavaNode;
-    private readonly InteractiveService _interactiveService = interactiveService;
-
     public enum BassBoost
     {
         Mute,
@@ -26,9 +24,15 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
         High
     }
 
-    private static readonly Regex LinkRegex = new(
-        "(http[s]?:\\/\\/(www\\.)?|ftp:\\/\\/(www\\.)?|www\\.){1}([0-9A-Za-z-\\.@:%_\\+~#=]+)+((\\.[a-zA-Z]{2,3})+)(/(.)*)?(\\?(.)*)?"
-    );
+    private readonly InteractiveService _interactiveService;
+
+    private readonly LavaNode _lavaNode;
+
+    public PlaybackModule(LavaNode lavaNode, InteractiveService interactiveService)
+    {
+        _lavaNode = lavaNode;
+        _interactiveService = interactiveService;
+    }
 
     [Command("bassboost")]
     [Summary("Sets the bass boost")]
@@ -44,15 +48,13 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
+        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel) Context.Channel);
 
         var gain = MapBoost();
 
-        await player.EqualizeAsync(_lavaNode, Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, 0)).ToArray());
-        await player.EqualizeAsync(_lavaNode, Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, gain)).ToArray());
+        await player.EqualizerAsync(Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, 0)).ToArray());
+        await player.EqualizerAsync(Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, gain)).ToArray());
         await ReplyAsync(embed: Embeds.Success($"Bass boost set to {boost.ToString()}"));
-
-        return;
 
         double MapBoost()
         {
@@ -80,16 +82,16 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
-        if (player is null)
+        if (!_lavaNode.HasPlayer(Context.Guild))
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        player.GetCustomQueue().Clear();
-        await player.StopAsync(_lavaNode, player.Track);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        player.GetQueue().Clear();
+        await player.StopAsync();
 
         await ReplyAsync(embed: Embeds.Success("Cleared the queue"));
     }
@@ -102,15 +104,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     {
         const int tracksPerPage = 10;
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
-        if (player is null)
+        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetCustomQueue();
+        var queue = player.GetQueue();
         if (queue.Length == 0)
         {
             await ReplyAsync(embed: Embeds.Error("The queue is empty"));
@@ -142,8 +143,6 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
 
         await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(3));
 
-        return;
-
         PageBuilder GeneratePage(int index)
         {
             var tracks = queue.Skip(index * tracksPerPage).Take(tracksPerPage);
@@ -170,7 +169,6 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     public async Task InsertAsync()
     {
         // TODO
-        await ReplyAsync("TODO");
     }
 
     [Command("join")]
@@ -216,7 +214,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -224,7 +222,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var queue = player.GetCustomQueue();
+        var queue = player.GetQueue();
         queue.IsCurrentTrackLooped = !queue.IsCurrentTrackLooped;
 
         await ReplyAsync(
@@ -246,7 +244,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
         if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
@@ -254,7 +252,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var queue = player.GetCustomQueue();
+        var queue = player.GetQueue();
         queue.IsLooped = !queue.IsLooped;
 
         await ReplyAsync(embed: Embeds.Success($"I will {(queue.IsLooped ? "now" : "no longer")} repeat the queue"));
@@ -272,15 +270,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
-        if (player is null)
+        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetCustomQueue();
+        var queue = player.GetQueue();
         if (from < 1 || from > queue.Length || to < 1 || to > queue.Length)
         {
             await ReplyAsync(embed: Embeds.Error("Invalid indices"));
@@ -306,53 +303,51 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
-        if (player is {State: {IsConnected: true}} && player.VoiceState.SessionId != voiceState.VoiceSessionId)
+        if (_lavaNode.TryGetPlayer(Context.Guild, out var player) &&
+            player.IsConnected &&
+            player.VoiceChannel != voiceState.VoiceChannel)
         {
             await ReplyAsync(embed: Embeds.Error("Music is already playing in another channel"));
 
             return;
         }
 
-        player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
+        player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel) Context.Channel);
 
         SearchResponse searchResponse;
         if (Uri.IsWellFormedUriString(song, UriKind.Absolute))
         {
-            searchResponse = await _lavaNode.LoadTrackAsync(song);
+            searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, song);
         }
         else
         {
             var search = new VideoSearch();
-            var firstMatch = (await search.GetVideos(song, 1)).FirstOrDefault()?.getUrl();
-            if (firstMatch is null)
-            {
-                await ReplyAsync("No songs matched");
-            }
+            var matches = await search.GetVideos(song, 1);
 
-            searchResponse = await _lavaNode.LoadTrackAsync(firstMatch);
+            var url = matches.First().getUrl();
+            searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, matches.First().getUrl());
         }
 
-        var queue = player.GetCustomQueue();
-        switch (searchResponse.Type)
+        var queue = player.GetQueue();
+        switch (searchResponse.Status)
         {
-            // case SearchType.LoadFailed:
-            // {
-            //     var reason = !string.IsNullOrWhiteSpace(searchResponse.Exception.Message)
-            //         ? searchResponse.Exception.Message
-            //         : "unknown";
-            //
-            //     await ReplyAsync(embed: Embeds.Error($"Error loading track: {reason}"));
-            //
-            //     break;
-            // }
-            case SearchType.Empty:
+            case SearchStatus.LoadFailed:
+            {
+                var reason = !string.IsNullOrWhiteSpace(searchResponse.Exception.Message)
+                    ? searchResponse.Exception.Message
+                    : "unknown";
+
+                await ReplyAsync(embed: Embeds.Error($"Error loading track: {reason}"));
+
+                break;
+            }
+            case SearchStatus.NoMatches:
             {
                 await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
 
                 break;
             }
-            case SearchType.Playlist:
+            case SearchStatus.PlaylistLoaded:
             {
                 var track = searchResponse.Tracks.First();
                 queue.Add(searchResponse.Tracks);
@@ -397,9 +392,9 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             }
         }
 
-        if (player.IsPaused)
+        if (player.PlayerState is PlayerState.None or PlayerState.Stopped)
         {
-            await player.PlayAsync(_lavaNode, queue.GetNext());
+            await player.PlayAsync(queue.GetNext());
         }
     }
 
@@ -417,16 +412,16 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.GetPlayerAsync(Context.Guild.Id);
-        if (player is null || player.GetQueue().Count is 0)
+        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        if (player is null)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetCustomQueue();
-        var track = queue.Remove(index - 1)!;
+        var queue = player.GetQueue();
+        var track = queue.Remove(index - 1);
 
         await ReplyAsync(embed: Embeds.Success($"Removed track [{track.Title}]({track.Url})"));
     }
