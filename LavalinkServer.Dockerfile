@@ -2,7 +2,7 @@ FROM eclipse-temurin:18-jre-focal
 
 WORKDIR /opt/Lavalink
 
-COPY ./Lavalink.jar Lavalink.jar
+COPY ./lib/Lavalink.jar Lavalink.jar
 
 EXPOSE 8080
 
