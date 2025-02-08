@@ -17,3 +17,6 @@ services:
       - "lavalink-server"
     environment:
       - LAVALINK__HOST=host.docker.internal
+      - LAVALINK__PORT=2333
+      - LAVALINK__PASSWORD=admin
+      - LAVALINK__ISSL=false
