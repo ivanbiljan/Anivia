@@ -223,13 +223,13 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
         return;
     }
 
-    if (user.Id == client.CurrentUser.Id)
-    {
-        await lavaNode.LeaveAsync(player.VoiceChannel);
-        await player.TextChannel.SendMessageAsync(embed: Embeds.Error("I have been kicked from the voice channel"));
+    // if (user.Id == client.CurrentUser.Id)
+    // {
+    //     await lavaNode.LeaveAsync(player.VoiceChannel);
+    //     await player.TextChannel.SendMessageAsync(embed: Embeds.Error("I have been kicked from the voice channel"));
 
-        return;
-    }
+    //     return;
+    // }
 
     if (state.VoiceChannel.ConnectedUsers.Count >= 2)
     {
