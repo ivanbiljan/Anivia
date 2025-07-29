@@ -223,13 +223,27 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
         return;
     }
 
-    // if (user.Id == client.CurrentUser.Id)
-    // {
-    //     await lavaNode.LeaveAsync(player.VoiceChannel);
-    //     await player.TextChannel.SendMessageAsync(embed: Embeds.Error("I have been kicked from the voice channel"));
+    if (user.Id == client.CurrentUser.Id)
+    {
+        // await lavaNode.LeaveAsync(player.VoiceChannel);
+        await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Voice connection timed out. Attempting reconnect"));
+        await ((IVoiceChannel)state.VoiceChannel).ConnectAsync(true);
+        await player.TextChannel.SendMessageAsync(embed: Embeds.Information($"Player connection: {(player.IsConnected ? "connected" : "disconnected")} | Player state: {player.PlayerState}"));
 
-    //     return;
-    // }
+        if (!player.IsConnected)
+        {
+            await player.VoiceChannel.ConnectAsync(true);
+            await player.TextChannel.SendMessageAsync(embed: Embeds.Information("Player reconnected"));
+        }
+
+        if (player.PlayerState is not Victoria.Player.PlayerState.Playing)
+        {
+            await player.PlayAsync(player.Track);
+            await player.TextChannel.SendMessageAsync(embed: Embeds.Information("Attempting to resume track"));
+        }
+
+        return;
+    }
 
     if (state.VoiceChannel.ConnectedUsers.Count >= 2)
     {
