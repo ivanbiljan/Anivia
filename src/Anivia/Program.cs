@@ -62,7 +62,7 @@ builder.Services.AddLavaNode(options =>
 
 var app = builder.Build();
 
-var discordOptions = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<DiscordOptions>()!;
+var discordOptions = builder.Configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>()!;
 var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
 var commandService = app.Services.GetRequiredService<CommandService>();
 await commandService.AddModulesAsync(typeof(Program).Assembly, app.Services);
