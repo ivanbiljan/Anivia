@@ -13,9 +13,9 @@ using YouTubeSearch;
 namespace Anivia.CommandModules;
 
 [Name("Playback")]
-public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interactiveService) : ModuleBase
+public sealed class PlaybackModule(LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lavaNode, InteractiveService interactiveService) : ModuleBase
 {
-    private readonly LavaNode _lavaNode = lavaNode;
+    private readonly LavaNode<LavaPlayer<LavaTrack>, LavaTrack> _lavaNode = lavaNode;
     private readonly InteractiveService _interactiveService = interactiveService;
 
     public enum BassBoost

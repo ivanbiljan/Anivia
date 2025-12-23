@@ -8,9 +8,9 @@ namespace Anivia.CommandModules;
 
 [Name("Track State")]
 [Summary("Commands used for updating the state of the current track")]
-public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
+public sealed class TrackStateModule(LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lavaNode) : ModuleBase
 {
-    private readonly LavaNode _lavaNode = lavaNode;
+    private readonly LavaNode<LavaPlayer<LavaTrack>, LavaTrack> _lavaNode = lavaNode;
 
     [Command("pause")]
     [Summary("Pauses the current track")]
