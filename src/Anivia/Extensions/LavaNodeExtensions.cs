@@ -1,6 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Anivia.CommandModules;
-using Victoria.Player;
+using Victoria;
 
 namespace Anivia.Extensions;
 
@@ -21,7 +21,7 @@ public static class LavaNodeExtensions
         return extension;
     }
 
-    public static CustomLavalinkQueue GetQueue(this LavaPlayer<LavaTrack> lavaPlayer)
+    public static CustomLavalinkQueue GetCustomQueue(this LavaPlayer<LavaTrack> lavaPlayer)
     {
         if (Extensions.TryGetValue(lavaPlayer, out var extension))
         {

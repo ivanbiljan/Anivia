@@ -1,5 +1,5 @@
 ﻿using System.Collections;
-using Victoria.Player;
+using Victoria;
 
 namespace Anivia.CommandModules;
 

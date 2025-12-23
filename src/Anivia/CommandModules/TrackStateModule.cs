@@ -2,7 +2,7 @@
 using Anivia.Extensions;
 using Discord;
 using Discord.Commands;
-using Victoria.Node;
+using Victoria;
 
 namespace Anivia.CommandModules;
 
@@ -24,15 +24,14 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
             return;
         }
 
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        await player.PauseAsync();
+        await player.PauseAsync(_lavaNode);
         await ReplyAsync(
             embed: Embeds.Success(
                 $"Track has been paused at {player.Track.Position.ToShortString().AsBold()} :pause_button:"));
@@ -50,15 +49,14 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
             return;
         }
 
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        await player.ResumeAsync();
+        await player.ResumeAsync(_lavaNode, player.Track);
         await ReplyAsync(embed: Embeds.Success("Track has been resumed :play_pause:"));
     }
 
@@ -66,7 +64,12 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
     [Alias("wind to")]
     public async Task SeekAsync(string timestamp)
     {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
 
         var position = ParseTimestamp(timestamp);
         if (position is null)
@@ -76,21 +79,21 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
             return;
         }
 
-        await player.SeekAsync(position.Value);
+        await player.SeekAsync(_lavaNode, position.Value);
 
         await ReplyAsync(
             embed: Embeds.Success(
                 $"Track has been wound to {position.Value.ToShortString()}/{player.Track.Duration.ToShortString()}"));
 
         return;
-        
+
         static TimeSpan? ParseTimestamp(string input)
         {
             if (TimeSpan.TryParse(input, out var result))
             {
                 return result;
             }
-            
+
             var match = Regex.Match(input, @"(?:(\d+)m)?(?:(\d+)s)?");
             if (!match.Groups[1].Success && !match.Groups[2].Success)
             {
@@ -99,7 +102,7 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
 
             var minutes = match.Groups[1].Success ? int.Parse(match.Groups[1].Value) : 0;
             var seconds = match.Groups[2].Success ? int.Parse(match.Groups[2].Value) : 0;
-            
+
             return new TimeSpan(0, minutes, seconds);
         }
     }
@@ -110,10 +113,15 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
     [Remarks("back 10")]
     public async Task WindCurrentTrackBackwardsAsync(int seconds)
     {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
 
         var forwardedTimestamp = player.Track.Position.Subtract(TimeSpan.FromSeconds(seconds));
-        await player.SeekAsync(forwardedTimestamp);
+        await player.SeekAsync(_lavaNode, forwardedTimestamp);
 
         await ReplyAsync(
             embed: Embeds.Success(
@@ -124,10 +132,15 @@ public sealed class TrackStateModule(LavaNode lavaNode) : ModuleBase
     [Alias("f")]
     public async Task WindCurrentTrackForwardAsync(int seconds)
     {
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
+        {
+            await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
+
+            return;
+        }
 
         var forwardedTimestamp = player.Track.Position.Add(TimeSpan.FromSeconds(seconds));
-        await player.SeekAsync(forwardedTimestamp);
+        await player.SeekAsync(_lavaNode, forwardedTimestamp);
 
         await ReplyAsync(
             embed: Embeds.Success(

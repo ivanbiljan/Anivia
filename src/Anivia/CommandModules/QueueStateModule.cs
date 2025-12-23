@@ -2,7 +2,7 @@
 using Anivia.Extensions;
 using Discord;
 using Discord.Commands;
-using Victoria.Node;
+using Victoria;
 
 namespace Anivia.CommandModules;
 
@@ -23,14 +23,14 @@ public sealed class QueueStateModule(LavaNode lavaNode) : ModuleBase
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        player.GetQueue().Shuffle();
+        player.GetCustomQueue().Shuffle();
 
         await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
     }
@@ -48,7 +48,7 @@ public sealed class QueueStateModule(LavaNode lavaNode) : ModuleBase
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
@@ -57,10 +57,10 @@ public sealed class QueueStateModule(LavaNode lavaNode) : ModuleBase
 
         if (numberOfTracks.HasValue)
         {
-            player.GetQueue().SkipTracks(numberOfTracks.Value - 1);
+            player.GetCustomQueue().SkipTracks(numberOfTracks.Value - 1);
         }
 
-        await player.StopAsync();
+        await player.StopAsync(_lavaNode, player.Track);
     }
 
     [Command("jump to")]
@@ -76,16 +76,16 @@ public sealed class QueueStateModule(LavaNode lavaNode) : ModuleBase
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        player.GetQueue().JumpToTrack(trackIndex - 1);
+        player.GetCustomQueue().JumpToTrack(trackIndex - 1);
 
-        await player.StopAsync();
+        await player.StopAsync(_lavaNode, player.Track);
         await ReplyAsync(embed: Embeds.Success($"Jumped to track at position {trackIndex}"));
     }
 }

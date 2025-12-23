@@ -8,8 +8,6 @@ using Discord.WebSocket;
 using Fergun.Interactive;
 using Microsoft.Extensions.Options;
 using Victoria;
-using Victoria.Node;
-using Victoria.Responses.Search;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,8 +21,7 @@ builder.Services.ConfigureAuditableOptions<LavalinkOptions>(
     builder.Configuration.GetSection(LavalinkOptions.SectionName)
 );
 
-builder.Services.AddSingleton(
-        _ => new DiscordSocketClient(
+builder.Services.AddSingleton(_ => new DiscordSocketClient(
             new DiscordSocketConfig
             {
                 GatewayIntents = GatewayIntents.AllUnprivileged |
@@ -38,8 +35,7 @@ builder.Services.AddSingleton(
 
 builder.Services.AddSingleton<CommandService>();
 
-builder.Services.AddSingleton<InteractionService>(
-    provider =>
+builder.Services.AddSingleton<InteractionService>(provider =>
     {
         var client = provider.GetRequiredService<DiscordSocketClient>();
 
@@ -55,38 +51,36 @@ builder.Services.AddSingleton(
     )
     .AddSingleton<InteractiveService>();
 
-builder.Services.AddLavaNode(
-    options =>
+builder.Services.AddLavaNode(options =>
     {
-        var lavalinkOptions = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<LavalinkOptions>();
-
-        options.Hostname = lavalinkOptions.Host;
-        options.Port = lavalinkOptions.Port;
-        options.Authorization = lavalinkOptions.Password;
-        // options.IsSecure = lavalinkOptions.IsSsl;
+        var lavaLinkOptions = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<LavalinkOptions>()!;
+        options.Hostname = lavaLinkOptions.Host;
+        options.Port = lavaLinkOptions.Port;
+        options.Authorization = lavaLinkOptions.Password;
     }
 );
 
 var app = builder.Build();
 
+var discordOptions = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<DiscordOptions>()!;
+var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
 var commandService = app.Services.GetRequiredService<CommandService>();
 await commandService.AddModulesAsync(typeof(Program).Assembly, app.Services);
 
 var lavaNode = app.Services.GetRequiredService<LavaNode>();
 lavaNode.OnTrackEnd += async args =>
 {
-    if (!args.Player.IsConnected)
-    {
-        return;
-    }
+    var textChannel = discordClient.Guilds.ElementAt(0).TextChannels.Single(c => c.Id == discordOptions.TextChannelId);
 
-    var queue = args.Player.GetQueue();
+    LavaPlayer<LavaTrack> player = await lavaNode.GetPlayerAsync(args.GuildId);
+    var queue = player.GetCustomQueue();
     if (queue.IsCurrentTrackLooped)
     {
         // This stopped working at some point
         // await args.Player.PlayAsync(args.Track);
-        var newTrack = (await lavaNode.SearchAsync(SearchType.Direct, args.Track.Url)).Tracks.First();
-        await args.Player.PlayAsync(newTrack);
+        // var newTrack = (await lavaNode.LoadTrackAsync(SearchType.Direct, args.Track.Url)).Tracks.First();
+        var newTrack = (await lavaNode.LoadTrackAsync(args.Track.Url)).Tracks.First();
+        await player.PlayAsync(lavaNode, newTrack);
 
         return;
     }
@@ -94,22 +88,24 @@ lavaNode.OnTrackEnd += async args =>
     if (queue.Next is null && !queue.IsLooped)
     {
         queue.Clear();
-        await args.Player.TextChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
+        await textChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
 
         return;
     }
 
     var track = queue.GetNext()!;
-    await args.Player.PlayAsync(track);
+    await player.PlayAsync(lavaNode, track);
 };
 
 lavaNode.OnTrackStart += async args =>
 {
+    var textChannel = discordClient.Guilds.ElementAt(0).TextChannels.Single(c => c.Id == discordOptions.TextChannelId);
+    var player = await lavaNode.GetPlayerAsync(args.GuildId);
     var embed = new EmbedBuilder()
         .WithDescription($"Started playing [{args.Track.Title}]({args.Track.Url})")
         .Build();
 
-    await args.Player.TextChannel.SendMessageAsync(embed: embed);
+    await textChannel.SendMessageAsync(embed: embed);
 };
 
 var client = app.Services.GetRequiredService<DiscordSocketClient>();
@@ -120,9 +116,7 @@ client.Ready += async () =>
     {
         try
         {
-            Console.WriteLine("Connecting");
             await lavaNode.ConnectAsync();
-            Console.WriteLine("Connected");
         }
         catch (Exception ex)
         {
@@ -169,7 +163,7 @@ client.MessageReceived += async message =>
 
     // Execute the command with the command context we just
     // created, along with the service provider for precondition checks.
-    var result = await commandService.ExecuteAsync(
+    await commandService.ExecuteAsync(
         context,
         argPos,
         app.Services
@@ -213,34 +207,28 @@ client.MessageUpdated += async (_, message, _) =>
 
 client.UserVoiceStateUpdated += async (user, state, _) =>
 {
-    if (!lavaNode.TryGetPlayer(state.VoiceChannel.Guild, out var player))
+    if (await lavaNode.TryGetPlayerAsync(state.VoiceChannel.Guild.Id) is not { } player)
     {
         return;
     }
 
-    if (player.VoiceChannel.Id != state.VoiceChannel.Id)
-    {
-        return;
-    }
-
+    var textChannel = discordClient.Guilds.ElementAt(0).TextChannels.Single(c => c.Id == discordOptions.TextChannelId);
     if (user.Id == client.CurrentUser.Id)
     {
         // await lavaNode.LeaveAsync(player.VoiceChannel);
-        await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Voice connection timed out. Attempting reconnect"));
+        await textChannel.SendMessageAsync(
+            embed: Embeds.Error("Voice connection timed out. Attempting reconnect"));
         await ((IVoiceChannel)state.VoiceChannel).ConnectAsync(true);
-        await player.TextChannel.SendMessageAsync(embed: Embeds.Information($"Player connection: {(player.IsConnected ? "connected" : "disconnected")} | Player state: {player.PlayerState}"));
+        await textChannel.SendMessageAsync(embed: Embeds.Information(
+            $"Player connection: {(player.State.IsConnected ? "connected" : "disconnected")}"));
 
-        if (!player.IsConnected)
+        if (!player.State.IsConnected)
         {
-            await player.VoiceChannel.ConnectAsync(true);
-            await player.TextChannel.SendMessageAsync(embed: Embeds.Information("Player reconnected"));
+            await textChannel.SendMessageAsync(embed: Embeds.Information("Player reconnected"));
         }
 
-        if (player.PlayerState is not Victoria.Player.PlayerState.Playing)
-        {
-            await player.PlayAsync(player.Track);
-            await player.TextChannel.SendMessageAsync(embed: Embeds.Information("Attempting to resume track"));
-        }
+        await player.PlayAsync(lavaNode, player.Track);
+        await textChannel.SendMessageAsync(embed: Embeds.Information("Attempting to resume track"));
 
         return;
     }
@@ -250,12 +238,11 @@ client.UserVoiceStateUpdated += async (user, state, _) =>
         return;
     }
 
-    await lavaNode.LeaveAsync(player.VoiceChannel);
-    await player.TextChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
+    await lavaNode.LeaveAsync(state.VoiceChannel);
+    await textChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
 };
 
-var options = builder.Configuration.GetSection(DiscordOptions.SectionName).Get<DiscordOptions>();
-await client.LoginAsync(TokenType.Bot, options.BotToken);
+await client.LoginAsync(TokenType.Bot, discordOptions.BotToken);
 await client.StartAsync();
 
 app.MapGet("/", () => "Hello World!");

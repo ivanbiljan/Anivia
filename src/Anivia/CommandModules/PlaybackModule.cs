@@ -4,10 +4,10 @@ using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
-using Victoria.Node;
-using Victoria.Player;
-using Victoria.Player.Filters;
-using Victoria.Responses.Search;
+using Victoria;
+using Victoria.Rest;
+using Victoria.Rest.Filters;
+using Victoria.Rest.Search;
 using YouTubeSearch;
 
 namespace Anivia.CommandModules;
@@ -33,7 +33,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     public async Task BassBoostAsync(BassBoost boost)
     {
         // Victoria TODO: this only works if boosting from 0 gain. I.e., High -> Mute does not work
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -41,12 +41,12 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel) Context.Channel);
+        var player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
 
         var gain = MapBoost();
 
-        await player.EqualizerAsync(Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, 0)).ToArray());
-        await player.EqualizerAsync(Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, gain)).ToArray());
+        await player.EqualizeAsync(_lavaNode, Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, 0)).ToArray());
+        await player.EqualizeAsync(_lavaNode, Enumerable.Range(0, 3).Select(x => new EqualizerBand(x, gain)).ToArray());
         await ReplyAsync(embed: Embeds.Success($"Bass boost set to {boost.ToString()}"));
 
         double MapBoost()
@@ -67,7 +67,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Summary("Clears the current queue")]
     public async Task ClearAsync()
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -75,16 +75,15 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        if (!_lavaNode.HasPlayer(Context.Guild))
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        player.GetQueue().Clear();
-        await player.StopAsync();
+        player.GetCustomQueue().Clear();
+        await player.StopAsync(_lavaNode, player.Track);
 
         await ReplyAsync(embed: Embeds.Success("Cleared the queue"));
     }
@@ -97,14 +96,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     {
         const int tracksPerPage = 10;
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetQueue();
+        var queue = player.GetCustomQueue();
         if (queue.Length == 0)
         {
             await ReplyAsync(embed: Embeds.Error("The queue is empty"));
@@ -112,7 +111,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        var maxPages = (int) Math.Ceiling((double) queue.Length / tracksPerPage);
+        var maxPages = (int)Math.Ceiling((double)queue.Length / tracksPerPage);
 
         var paginator = new LazyPaginatorBuilder()
             .WithUsers(Context.User)
@@ -145,9 +144,8 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
                 .WithDescription(
                     string.Join(
                         Environment.NewLine,
-                        tracks.Select(
-                            (track, ix) =>
-                                $"{(track == queue.Current ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})"
+                        tracks.Select((track, ix) =>
+                            $"{(track == queue.Current ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{track.Duration}]` [{track.Title.AsBold()}]({track.Url})"
                         )
                     )
                 )
@@ -168,7 +166,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Summary("Makes me join your voice channel")]
     public async Task JoinCurrentVoiceChannelAsync()
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -184,7 +182,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Summary("Makes me leave the voice channel")]
     public async Task LeaveAsync()
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -199,7 +197,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Alias("loop", "repeat", "repeat current")]
     public async Task LoopCurrentSong()
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -207,15 +205,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetQueue();
+        var queue = player.GetCustomQueue();
         queue.IsCurrentTrackLooped = !queue.IsCurrentTrackLooped;
 
         await ReplyAsync(
@@ -229,7 +226,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Alias("repeat queue")]
     public async Task LoopQueueAsync()
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -237,15 +234,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetQueue();
+        var queue = player.GetCustomQueue();
         queue.IsLooped = !queue.IsLooped;
 
         await ReplyAsync(embed: Embeds.Success($"I will {(queue.IsLooped ? "now" : "no longer")} repeat the queue"));
@@ -255,7 +251,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Alias("mv")]
     public async Task MoveAsync(int from, int to)
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -263,14 +259,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        if (!_lavaNode.TryGetPlayer(Context.Guild, out var player))
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetQueue();
+        var queue = player.GetCustomQueue();
         if (from < 1 || from > queue.Length || to < 1 || to > queue.Length)
         {
             await ReplyAsync(embed: Embeds.Error("Invalid indices"));
@@ -288,7 +284,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Summary("Queue a track or playlist from a search term or url")]
     public async Task PlayAsync([Remainder] string song)
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -296,21 +292,20 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        if (_lavaNode.TryGetPlayer(Context.Guild, out var player) &&
-            player.IsConnected &&
-            player.VoiceChannel != voiceState.VoiceChannel)
+        var player = await _lavaNode.TryGetPlayerAsync(Context.Guild.Id);
+        if (player != null)
         {
             await ReplyAsync(embed: Embeds.Error("Music is already playing in another channel"));
 
             return;
         }
 
-        player = await _lavaNode.JoinAsync(voiceState.VoiceChannel, (ITextChannel) Context.Channel);
+        player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
 
         SearchResponse searchResponse;
         if (Uri.IsWellFormedUriString(song, UriKind.Absolute))
         {
-            searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, song);
+            searchResponse = await _lavaNode.LoadTrackAsync(song);
         }
         else
         {
@@ -318,13 +313,13 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             var matches = await search.GetVideos(song, 1);
 
             var url = matches.First().getUrl();
-            searchResponse = await _lavaNode.SearchAsync(SearchType.Direct, matches.First().getUrl());
+            searchResponse = await _lavaNode.LoadTrackAsync(matches.First().getUrl());
         }
 
-        var queue = player.GetQueue();
-        switch (searchResponse.Status)
+        var queue = player.GetCustomQueue();
+        switch (searchResponse.Type)
         {
-            case SearchStatus.LoadFailed:
+            case SearchType.Error:
             {
                 var reason = !string.IsNullOrWhiteSpace(searchResponse.Exception.Message)
                     ? searchResponse.Exception.Message
@@ -334,13 +329,13 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
 
                 break;
             }
-            case SearchStatus.NoMatches:
+            case SearchType.Empty:
             {
                 await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
 
                 break;
             }
-            case SearchStatus.PlaylistLoaded:
+            case SearchType.Playlist:
             {
                 var track = searchResponse.Tracks.First();
                 queue.Add(searchResponse.Tracks);
@@ -385,9 +380,9 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             }
         }
 
-        if (player.PlayerState is PlayerState.None or PlayerState.Stopped)
+        if (player.State.IsConnected)
         {
-            await player.PlayAsync(queue.GetNext());
+            await player.PlayAsync(_lavaNode, queue.GetNext());
         }
     }
 
@@ -397,7 +392,7 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
     [Remarks("remove <track number (1, 2, 3)>")]
     public async Task RemoveAsync(int index)
     {
-        var voiceState = (IVoiceState) Context.User;
+        var voiceState = (IVoiceState)Context.User;
         if (voiceState.VoiceChannel is null)
         {
             await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
@@ -405,15 +400,14 @@ public sealed class PlaybackModule(LavaNode lavaNode, InteractiveService interac
             return;
         }
 
-        _lavaNode.TryGetPlayer(Context.Guild, out var player);
-        if (player is null)
+        if (await _lavaNode.TryGetPlayerAsync(Context.Guild.Id) is not LavaPlayer player)
         {
             await ReplyAsync(embed: Embeds.Error("Nothing is playing"));
 
             return;
         }
 
-        var queue = player.GetQueue();
+        var queue = player.GetCustomQueue();
         var track = queue.Remove(index - 1);
 
         await ReplyAsync(embed: Embeds.Success($"Removed track [{track.Title}]({track.Url})"));
