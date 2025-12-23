@@ -67,7 +67,7 @@ var discordClient = app.Services.GetRequiredService<DiscordSocketClient>();
 var commandService = app.Services.GetRequiredService<CommandService>();
 await commandService.AddModulesAsync(typeof(Program).Assembly, app.Services);
 
-var lavaNode = app.Services.GetRequiredService<LavaNode>();
+var lavaNode = app.Services.GetRequiredService<LavaNode<LavaPlayer<LavaTrack>, LavaTrack>>();
 lavaNode.OnTrackEnd += async args =>
 {
     var textChannel = discordClient.Guilds.ElementAt(0).TextChannels.Single(c => c.Id == discordOptions.TextChannelId);
