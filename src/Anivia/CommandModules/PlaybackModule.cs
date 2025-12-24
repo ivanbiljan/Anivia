@@ -1,5 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 using Anivia.Extensions;
+using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
 using Fergun.Interactive;
@@ -282,25 +283,15 @@ public sealed class PlaybackModule(LavaNode<LavaPlayer<LavaTrack>, LavaTrack> la
     [Command("play")]
     [Alias("p")]
     [Summary("Queue a track or playlist from a search term or url")]
+    [RequireUserInVoiceChannel]
     public async Task PlayAsync([Remainder] string song)
     {
         var voiceState = (IVoiceState)Context.User;
-        if (voiceState.VoiceChannel is null)
-        {
-            await ReplyAsync(embed: Embeds.Error("You are not in a voice channel"));
-
-            return;
-        }
-
         var player = await _lavaNode.TryGetPlayerAsync(Context.Guild.Id);
-        if (player != null)
+        if (player is null)
         {
-            await ReplyAsync(embed: Embeds.Error("Music is already playing in another channel"));
-
-            return;
+            player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
         }
-
-        player = await _lavaNode.JoinAsync(voiceState.VoiceChannel);
 
         SearchResponse searchResponse;
         if (Uri.IsWellFormedUriString(song, UriKind.Absolute))
@@ -382,7 +373,7 @@ public sealed class PlaybackModule(LavaNode<LavaPlayer<LavaTrack>, LavaTrack> la
 
         if (player.State.IsConnected)
         {
-            await player.PlayAsync(_lavaNode, queue.GetNext());
+            await player.PlayAsync(_lavaNode, queue.ConsumeNext());
         }
     }
 

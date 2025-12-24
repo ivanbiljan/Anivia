@@ -45,7 +45,7 @@ public sealed class CustomLavalinkQueue : IEnumerable<LavaTrack>
         _currentIndex = 0;
     }
 
-    public LavaTrack? GetNext()
+    public LavaTrack? ConsumeNext()
     {
         if (_currentIndex < _tracks.Count)
         {
