@@ -12,13 +12,13 @@ using Victoria.WebSocket.EventArgs;
 
 namespace Anivia;
 
-internal sealed class Bootstrapper(
+public sealed class PlaybackOrchestrator(
     DiscordSocketClient discordSocketClient,
     CommandService commandService,
     LavaNode<LavaPlayer<LavaTrack>, LavaTrack> lavaNode,
     IOptions<DiscordOptions> discordOptions,
     IServiceProvider serviceProvider,
-    ILogger<Bootstrapper> logger
+    ILogger<PlaybackOrchestrator> logger
 )
 {
     private readonly DiscordOptions _discordOptions = discordOptions.Value;
@@ -27,7 +27,7 @@ internal sealed class Bootstrapper(
     private readonly InteractionService _interactionService = new(discordSocketClient.Rest);
     private readonly LavaNode<LavaPlayer<LavaTrack>, LavaTrack> _lavaNode = lavaNode;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
-    private readonly ILogger<Bootstrapper> _logger = logger;
+    private readonly ILogger<PlaybackOrchestrator> _logger = logger;
 
     public ConcurrentDictionary<ulong, ulong> GuildToTextChannelMap { get; } = new();
 

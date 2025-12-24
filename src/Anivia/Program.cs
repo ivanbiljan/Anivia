@@ -59,8 +59,10 @@ builder.Services.AddLavaNode(options =>
     }
 );
 
+builder.Services.AddSingleton<PlaybackOrchestrator>();
+
 var app = builder.Build();
-var bootstrapper = app.Services.GetRequiredService<Bootstrapper>();
+var bootstrapper = app.Services.GetRequiredService<PlaybackOrchestrator>();
 await bootstrapper.BootstrapAsync();
 
 app.MapGet("/", () => "Hello World!");
