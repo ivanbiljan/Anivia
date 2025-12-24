@@ -1,4 +1,4 @@
-﻿using Anivia.Options;
+﻿using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
 

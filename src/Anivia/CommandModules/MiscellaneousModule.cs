@@ -1,7 +1,7 @@
 ﻿using System.Runtime.InteropServices;
 using System.Text.Json;
 using Anivia.Extensions;
-using Anivia.Options;
+using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;

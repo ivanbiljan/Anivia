@@ -1,4 +1,4 @@
-﻿namespace Anivia.Options;
+﻿namespace Anivia.Infrastructure;
 
 public sealed class DiscordOptions
 {

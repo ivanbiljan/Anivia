@@ -1,4 +1,4 @@
-﻿using Anivia.Options;
+﻿using Anivia.Infrastructure;
 using Microsoft.Extensions.Options;
 
 namespace Anivia.Extensions;

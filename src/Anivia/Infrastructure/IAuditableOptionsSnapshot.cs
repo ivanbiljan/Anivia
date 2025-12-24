@@ -2,7 +2,7 @@
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
 
-namespace Anivia.Options;
+namespace Anivia.Infrastructure;
 
 public interface IAuditableOptionsSnapshot<out T> : IOptionsMonitor<T> where T : class, new()
 {

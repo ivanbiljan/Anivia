@@ -1,6 +1,6 @@
 using Anivia.CommandModules;
 using Anivia.Extensions;
-using Anivia.Options;
+using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
