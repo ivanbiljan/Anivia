@@ -13,7 +13,7 @@ using Microsoft.Extensions.Options;
 namespace Anivia.CommandModules;
 
 [Name("Misc")]
-public sealed class MiscellaneousModule(
+public sealed class MiscellaneousCommands(
     CommandService commandService,
     IOptionsMonitor<DiscordOptions> discordOptions,
     IOptionsMonitor<LavalinkOptions> lavalinkOptions,
