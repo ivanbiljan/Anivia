@@ -302,7 +302,7 @@ public sealed class PlaybackCommands(
         }
         
         await player.Queue.RemoveAtAsync(index);
-        await ReplyAsync(embed: Embeds.Success($"Removed track [{queueItem.Track.Title}]({queueItem.Track.Uri})"));
+        await ReplyAsync(embed: Embeds.Success($"Removed track [{queueItem.Track!.Title}]({queueItem.Track.Uri})"));
     }
     
     [Command("move")]
