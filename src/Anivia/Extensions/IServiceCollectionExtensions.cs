@@ -12,8 +12,7 @@ public static class IServiceCollectionExtensions
     {
         serviceCollection.Configure<T>(configurationSection);
 
-        serviceCollection.AddTransient<IAuditableOptionsSnapshot<T>>(
-            provider => new AuditableOptionsSnapshot<T>(
+        serviceCollection.AddTransient<IAuditableOptionsSnapshot<T>>(provider => new AuditableOptionsSnapshot<T>(
                 provider.GetRequiredService<IOptionsMonitor<T>>(),
                 configurationSection,
                 provider.GetRequiredService<IHostEnvironment>()

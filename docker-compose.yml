@@ -6,7 +6,7 @@ services:
     ports:
       - "2333:2333"
     healthcheck:
-      test: ["CMD", "curl", "-f", "-H", "Authorization: admin", "http://localhost:2333/version"]
+      test: [ "CMD", "curl", "-f", "-H", "Authorization: admin", "http://localhost:2333/version" ]
       interval: 10s
       timeout: 10s
       retries: 30

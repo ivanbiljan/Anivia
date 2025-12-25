@@ -1,6 +1,6 @@
 server:
   port: 2333
-  
+
 plugins:
   youtube: # To read more about it's configuration visit https://github.com/lavalink-devs/youtube-source#plugin
     enabled: true

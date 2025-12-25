@@ -1,5 +1,5 @@
-using Discord.Commands;
 using Discord;
+using Discord.Commands;
 
 namespace Anivia.Infrastructure;
 

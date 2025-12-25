@@ -6,7 +6,7 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Fergun.Interactive;
-using Victoria;
+using Lavalink4NET.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,21 +50,11 @@ builder.Services.AddSingleton(
     )
     .AddSingleton<InteractiveService>();
 
-builder.Services.AddLavaNode(options =>
-    {
-        var lavaLinkOptions = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<LavalinkOptions>()!;
-        options.Hostname = lavaLinkOptions.Host;
-        options.Port = lavaLinkOptions.Port;
-        options.Authorization = lavaLinkOptions.Password;
-    }
-);
-
-builder.Services.AddSingleton<PlaybackOrchestrator>();
+builder.Services.AddLavalink();
+builder.Services.ConfigureLavalink(options => { options.Passphrase = "admin"; });
 
 var app = builder.Build();
-var bootstrapper = app.Services.GetRequiredService<PlaybackOrchestrator>();
-await bootstrapper.BootstrapAsync();
-
-app.MapGet("/", () => "Hello World!");
+var bootstrapper = app.Services.GetRequiredService<Bootstrapper>();
+await bootstrapper.InitializeAsync();
 
 app.Run();
