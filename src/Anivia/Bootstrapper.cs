@@ -3,13 +3,12 @@ using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
-using Microsoft.Extensions.Options;
 
 namespace Anivia;
 
 public sealed class Bootstrapper(
     DiscordSocketClient discordSocketClient,
-    IOptions<DiscordOptions> discordOptions,
+    IAuditableOptionsSnapshot<DiscordOptions> discordOptions,
     CommandService commandService,
     IServiceProvider serviceProvider,
     ILogger<Bootstrapper> logger
@@ -18,7 +17,7 @@ public sealed class Bootstrapper(
     private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
     private readonly CommandService _commandService = commandService;
     private readonly InteractionService _interactionService = new(discordSocketClient.Rest);
-    private readonly DiscordOptions _discordOptions = discordOptions.Value;
+    private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
     private readonly ILogger<Bootstrapper> _logger = logger;
 
