@@ -11,9 +11,15 @@ public abstract class AniviaCommandModule(IAudioService lavalinkAudioService) : 
 {
     private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
 
-    public async ValueTask<QueuedLavalinkPlayer?> GetPlayerAsync()
+    public async ValueTask<QueuedLavalinkPlayer?> GetPlayerAsync(bool connectToVoiceChannel = false)
     {
-        var retrieveOptions = new PlayerRetrieveOptions(VoiceStateBehavior: MemberVoiceStateBehavior.RequireSame);
+        var channelBehavior = connectToVoiceChannel ? PlayerChannelBehavior.Join : PlayerChannelBehavior.None;
+        
+        var retrieveOptions = new PlayerRetrieveOptions(
+            ChannelBehavior: channelBehavior,
+            VoiceStateBehavior: MemberVoiceStateBehavior.Ignore
+        );
+        
         var playerResult = await _lavalinkAudioService.Players
             .RetrieveAsync(Context, PlayerFactory.Queued, retrieveOptions);
 
@@ -24,7 +30,6 @@ public abstract class AniviaCommandModule(IAudioService lavalinkAudioService) : 
 
         var errorMessage = playerResult.Status switch
         {
-            PlayerRetrieveStatus.UserNotInVoiceChannel => "You are not in a voice channel",
             PlayerRetrieveStatus.VoiceChannelMismatch => "Music is already playing in another channel",
             PlayerRetrieveStatus.BotNotConnected => "Nothing is playing",
             _ => $"An unknown error has occurred: {playerResult.Status}"

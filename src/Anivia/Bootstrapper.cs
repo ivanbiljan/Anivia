@@ -4,7 +4,6 @@ using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
 using Microsoft.Extensions.Options;
-using Victoria;
 
 namespace Anivia;
 
@@ -43,6 +42,8 @@ public sealed class Bootstrapper(
         _logger.LogInformation("Initializing interaction service");
         await _interactionService.AddModulesAsync(typeof(Program).Assembly, _serviceProvider);
         await _interactionService.RegisterCommandsGloballyAsync();
+
+        _logger.LogInformation("Initialization complete");
     }
 
     private async Task OnMessageReceivedAsync(SocketMessage message)
