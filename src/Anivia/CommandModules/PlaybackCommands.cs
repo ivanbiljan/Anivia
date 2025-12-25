@@ -95,30 +95,32 @@ public sealed class PlaybackCommands(
                 .Build();
 
             await ReplyAsync(embed: embed);
-
-            return;
         }
-
-        var track = trackLoadResult.Track ?? trackLoadResult.Tracks.First();
-        await player.Queue.AddAsync(new TrackQueueItem(track));
-
-        if (player.Queue.Count > 1)
+        else
         {
-            var embed = new EmbedBuilder()
-                .WithTitle("Added Track")
-                .WithThumbnailUrl(
-                    track.ArtworkUri?.ToString() ?? $"https://img.youtube.com/vi/{track.Identifier}/0.jpg"
-                )
-                .AddField("Track", $"[{track.Title}]({track.Uri})")
-                // .AddField("Estimated time until played", "n")
-                .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
-                // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
-                .AddField("Position in queue", player.Queue.Count, true)
-                .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
-                .Build();
+            var track = trackLoadResult.Track ?? trackLoadResult.Tracks.First();
+            await player.Queue.AddAsync(new TrackQueueItem(track));
 
-            await ReplyAsync(embed: embed);
+            if (player.Queue.Count > 1)
+            {
+                var embed = new EmbedBuilder()
+                    .WithTitle("Added Track")
+                    .WithThumbnailUrl(
+                        track.ArtworkUri?.ToString() ?? $"https://img.youtube.com/vi/{track.Identifier}/0.jpg"
+                    )
+                    .AddField("Track", $"[{track.Title}]({track.Uri})")
+                    // .AddField("Estimated time until played", "n")
+                    .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
+                    // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
+                    .AddField("Position in queue", player.Queue.Count, true)
+                    .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .Build();
+
+                await ReplyAsync(embed: embed);
+            }
         }
+
+        await player.PlayAsync(player.Queue[0]);
     }
     
     [Command("queue", RunMode = RunMode.Async)]
@@ -231,7 +233,56 @@ public sealed class PlaybackCommands(
             )
         );
     }
-    
+
+    [Command("insert")]
+    [Summary("Insert a track right after the one that is currently playing")]
+    public async Task InsertTrackAsync([Remainder] string song)
+    {
+        var player = await GetPlayerAsync(connectToVoiceChannel: true);
+        if (player is null)
+        {
+            return;
+        }
+
+        var trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.YouTube);
+        if (trackLoadResult.IsFailed)
+        {
+            await ReplyAsync(
+                embed: Embeds.Error($"YouTube search failed: {trackLoadResult.Exception?.Message ?? "unknown error"}")
+            );
+        }
+
+        if (!trackLoadResult.HasMatches)
+        {
+            await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
+
+            return;
+        }
+
+        var track = trackLoadResult.Playlist?.SelectedTrack ??
+                    trackLoadResult.Track ?? trackLoadResult.Tracks.First();
+
+        await player.Queue.InsertAsync((player.Queue.History?.Count ?? -1) + 2, new TrackQueueItem(track));
+
+        if (player.Queue.Count > 1)
+        {
+            var embed = new EmbedBuilder()
+                .WithTitle("Added Track")
+                .WithThumbnailUrl(
+                    track.ArtworkUri?.ToString() ?? $"https://img.youtube.com/vi/{track.Identifier}/0.jpg"
+                )
+                .AddField("Track", $"[{track.Title}]({track.Uri})")
+                // .AddField("Estimated time until played", "n")
+                .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
+                // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
+                .AddField("Position in queue", player.Queue.Count, true)
+                .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
+                .Build();
+
+            await ReplyAsync(embed: embed);
+        }
+    }
+
     [Command("remove")]
     [Alias("rm", "delete", "del")]
     [Summary("Removes a track from the queue")]
