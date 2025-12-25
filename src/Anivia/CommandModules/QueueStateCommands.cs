@@ -1,9 +1,7 @@
 using System.Runtime.InteropServices;
 using Anivia.Infrastructure;
-using Discord;
 using Discord.Commands;
 using Lavalink4NET;
-using Victoria;
 
 namespace Anivia.CommandModules;
 
