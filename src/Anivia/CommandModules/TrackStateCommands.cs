@@ -1,10 +1,8 @@
 using System.Text.RegularExpressions;
 using Anivia.Extensions;
 using Anivia.Infrastructure;
-using Discord;
 using Discord.Commands;
 using Lavalink4NET;
-using Victoria;
 
 namespace Anivia.CommandModules;
 
@@ -114,7 +112,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.Track.Duration} :rewind:"));
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :rewind:"));
     }
 
     [Command("forward")]

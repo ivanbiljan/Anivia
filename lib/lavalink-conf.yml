@@ -26,7 +26,7 @@ plugins:
 lavalink:
   plugins:
     # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.13.3"
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.16.0"
       repository: "https://maven.lavalink.dev/releases" # use https://maven.lavalink.dev/snapshots if you want to use a snapshot version.
   server:
     password: "admin"
@@ -38,3 +38,14 @@ lavalink:
       vimeo: true
       http: true
       local: false
+
+logging:
+  level:
+    root: INFO 
+    lavalink: DEBUG
+    com.sedmelluq.discord.lavaplayer.tools.ExceptionTools: DEBUG
+    dev.lavalink.youtube: DEBUG
+  request:
+    enabled: true
+    includeClientInfo: true
+    includeQueryString: true

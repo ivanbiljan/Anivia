@@ -5,6 +5,7 @@ using Discord.Commands;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using Lavalink4NET;
+using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
 using RunMode = Discord.Commands.RunMode;
@@ -42,25 +43,20 @@ public sealed class PlaybackCommands(
         }
     }
 
-    [Command("play")]
+    [Command("play", RunMode = RunMode.Async)]
     [Alias("p")]
     [Summary("Queue a track or playlist from a search term or url")]
     [RequireUserInVoiceChannel]
     public async Task PlayAsync([Remainder] string song)
     {
-        var player = await GetPlayerAsync(connectToVoiceChannel: true);
+        var player = await GetPlayerAsync(connectToVoiceChannel: true).ConfigureAwait(false);
         if (player is null)
         {
             return;
         }
 
-        var trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.YouTube);
-        if (trackLoadResult.IsFailed)
-        {
-            await ReplyAsync(
-                embed: Embeds.Error($"YouTube search failed: {trackLoadResult.Exception?.Message ?? "unknown error"}")
-            );
-        }
+        var trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.YouTube)
+            .ConfigureAwait(false);
 
         if (!trackLoadResult.HasMatches)
         {
@@ -77,7 +73,7 @@ public sealed class PlaybackCommands(
 
             foreach (var playlistTrack in trackLoadResult.Tracks)
             {
-                await player.Queue.AddAsync(new TrackQueueItem(playlistTrack));
+                await player.PlayAsync(playlistTrack).ConfigureAwait(false);
             }
 
             var embed = new EmbedBuilder()
@@ -99,9 +95,9 @@ public sealed class PlaybackCommands(
         else
         {
             var track = trackLoadResult.Track ?? trackLoadResult.Tracks.First();
-            await player.Queue.AddAsync(new TrackQueueItem(track));
+            await player.PlayAsync(track).ConfigureAwait(false);
 
-            if (player.Queue.Count > 1)
+            if (player.CurrentTrack is not null)
             {
                 var embed = new EmbedBuilder()
                     .WithTitle("Added Track")
@@ -119,10 +115,8 @@ public sealed class PlaybackCommands(
                 await ReplyAsync(embed: embed);
             }
         }
-
-        await player.PlayAsync(player.Queue[0]);
     }
-    
+
     [Command("queue", RunMode = RunMode.Async)]
     [Alias("q")]
     [Summary("Displays the current queue")]
@@ -134,9 +128,21 @@ public sealed class PlaybackCommands(
         {
             return;
         }
-        
+
         const int tracksPerPage = 10;
-        var queue = player.Queue;
+        var queue = new List<ITrackQueueItem>();
+        if (player.Queue.History is not null)
+        {
+            queue.AddRange(player.Queue.History);
+        }
+
+        if (player.CurrentItem is not null)
+        {
+            queue.Add(player.CurrentItem);
+        }
+        
+        queue.AddRange(player.Queue);
+
         if (queue.Count == 0)
         {
             await ReplyAsync(embed: Embeds.Error("The queue is empty"));
@@ -144,7 +150,7 @@ public sealed class PlaybackCommands(
             return;
         }
 
-        var maxPages = (int)Math.Ceiling((double)queue.Count / tracksPerPage);
+        var maxPages = (int) Math.Ceiling((double) queue.Count / tracksPerPage);
 
         var paginator = new LazyPaginatorBuilder()
             .WithUsers(Context.User)
@@ -185,11 +191,11 @@ public sealed class PlaybackCommands(
                     )
                 )
                 .WithFooter(
-                    $"Current track: {player.CurrentTrack!.Title} [{player.CurrentTrack.StartPosition?.ToShortString()} / {player.CurrentTrack.Duration.ToShortString()}]"
+                    $"Current track: {player.CurrentTrack!.Title} [{player.Position!.Value.Position.ToShortString()} / {player.CurrentTrack.Duration.ToShortString()}]"
                 );
         }
     }
-    
+
     [Command("loop current")]
     [Alias("loop", "repeat", "repeat current")]
     [RequireUserInVoiceChannel]
@@ -300,11 +306,11 @@ public sealed class PlaybackCommands(
         {
             return;
         }
-        
+
         await player.Queue.RemoveAtAsync(index);
         await ReplyAsync(embed: Embeds.Success($"Removed track [{queueItem.Track!.Title}]({queueItem.Track.Uri})"));
     }
-    
+
     [Command("move")]
     [Alias("mv")]
     public async Task MoveTrackAsync(int from, int to)
@@ -329,7 +335,7 @@ public sealed class PlaybackCommands(
 
         await ReplyAsync(embed: Embeds.Success("Track moved"));
     }
-    
+
     [Command("clear")]
     [Summary("Clears the current queue")]
     [RequireUserInVoiceChannel]
@@ -342,6 +348,11 @@ public sealed class PlaybackCommands(
         }
 
         await player.Queue.ClearAsync();
+        if (player.Queue.History is not null)
+        {
+            await player.Queue.History.ClearAsync();
+        }
+
         await player.StopAsync();
 
         await ReplyAsync(embed: Embeds.Success("Cleared the queue"));

@@ -51,7 +51,15 @@ builder.Services.AddSingleton(
     .AddSingleton<InteractiveService>();
 
 builder.Services.AddLavalink();
-builder.Services.ConfigureLavalink(options => { options.Passphrase = "admin"; });
+builder.Services.ConfigureLavalink(options =>
+{
+    var lavalinkConfig = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<LavalinkOptions>()!;
+    options.BaseAddress = new Uri(lavalinkConfig.Host);
+    options.Passphrase = lavalinkConfig.Password;
+});
+
+builder.Services.AddSingleton<Bootstrapper>();
+builder.Services.AddSingleton<PlaybackEventListener>();
 
 var app = builder.Build();
 var bootstrapper = app.Services.GetRequiredService<Bootstrapper>();

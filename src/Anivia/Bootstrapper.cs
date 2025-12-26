@@ -10,12 +10,15 @@ public sealed class Bootstrapper(
     DiscordSocketClient discordSocketClient,
     IAuditableOptionsSnapshot<DiscordOptions> discordOptions,
     CommandService commandService,
+    PlaybackEventListener playbackEventListener,
     IServiceProvider serviceProvider,
+    
     ILogger<Bootstrapper> logger
 )
 {
     private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
     private readonly CommandService _commandService = commandService;
+    private readonly PlaybackEventListener _playbackEventListener = playbackEventListener;
     private readonly InteractionService _interactionService = new(discordSocketClient.Rest);
     private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
     private readonly IServiceProvider _serviceProvider = serviceProvider;
@@ -27,7 +30,7 @@ public sealed class Bootstrapper(
         _discordSocketClient.InteractionCreated += OnInteractionCreatedAsync;
         _discordSocketClient.MessageReceived += OnMessageReceivedAsync;
 
-        _logger.LogInformation("Starting socket client");
+        _logger.LogInformation("Starting Discord socket client");
         await _discordSocketClient.LoginAsync(TokenType.Bot, _discordOptions.BotToken);
         await _discordSocketClient.StartAsync();
     }
@@ -35,12 +38,16 @@ public sealed class Bootstrapper(
     private async Task OnBotReadyAsync()
     {
         _logger.LogInformation("Discord socket client ready");
+        
         _logger.LogInformation("Initializing command modules");
         await _commandService.AddModulesAsync(typeof(Program).Assembly, _serviceProvider);
 
         _logger.LogInformation("Initializing interaction service");
         await _interactionService.AddModulesAsync(typeof(Program).Assembly, _serviceProvider);
         await _interactionService.RegisterCommandsGloballyAsync();
+        
+        _logger.LogInformation("Registering playback event handlers");
+        _playbackEventListener.Subscribe();
 
         _logger.LogInformation("Initialization complete");
     }
