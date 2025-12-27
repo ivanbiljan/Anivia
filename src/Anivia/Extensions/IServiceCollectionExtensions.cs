@@ -1,4 +1,4 @@
-﻿using Anivia.Options;
+﻿using Anivia.Infrastructure;
 using Microsoft.Extensions.Options;
 
 namespace Anivia.Extensions;
@@ -12,8 +12,7 @@ public static class IServiceCollectionExtensions
     {
         serviceCollection.Configure<T>(configurationSection);
 
-        serviceCollection.AddTransient<IAuditableOptionsSnapshot<T>>(
-            provider => new AuditableOptionsSnapshot<T>(
+        serviceCollection.AddTransient<IAuditableOptionsSnapshot<T>>(provider => new AuditableOptionsSnapshot<T>(
                 provider.GetRequiredService<IOptionsMonitor<T>>(),
                 configurationSection,
                 provider.GetRequiredService<IHostEnvironment>()

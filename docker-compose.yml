@@ -6,7 +6,7 @@ services:
     ports:
       - "2333:2333"
     healthcheck:
-      test: ["CMD", "curl", "-f", "-H", "Authorization: admin", "http://localhost:2333/version"]
+      test: [ "CMD", "curl", "-f", "-H", "Authorization: admin", "http://localhost:2333/version" ]
       interval: 10s
       timeout: 10s
       retries: 30
@@ -23,7 +23,7 @@ services:
       lavalink-server:
         condition: service_healthy
     environment:
-      - LAVALINK__HOST=host.docker.internal
+      - LAVALINK__HOST=http://host.docker.internal:2333
       - LAVALINK__PORT=2333
       - LAVALINK__PASSWORD=admin
       - LAVALINK__ISSL=false

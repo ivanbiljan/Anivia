@@ -1,7 +1,7 @@
-﻿using System.Runtime.InteropServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Anivia.Extensions;
-using Anivia.Options;
+using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
 using Discord.WebSocket;
@@ -13,13 +13,12 @@ using Microsoft.Extensions.Options;
 namespace Anivia.CommandModules;
 
 [Name("Misc")]
-public sealed class MiscellaneousModule(
+public sealed class MiscellaneousCommands(
     CommandService commandService,
     IOptionsMonitor<DiscordOptions> discordOptions,
     IOptionsMonitor<LavalinkOptions> lavalinkOptions,
     InteractiveService interactiveService
-)
-    : ModuleBase
+) : ModuleBase
 {
     private static readonly GoogleScraper Scraper = new();
     private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;

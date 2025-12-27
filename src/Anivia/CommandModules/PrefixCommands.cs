@@ -1,13 +1,17 @@
-﻿using Anivia.Options;
+using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
+using Lavalink4NET;
 
 namespace Anivia.CommandModules;
 
 [Name("Prefix")]
 [Group("prefix")]
 [Summary("Prefix related commands")]
-public sealed class PrefixModule(IAuditableOptionsSnapshot<DiscordOptions> discordOptions) : ModuleBase
+public sealed class PrefixCommands(
+    IAudioService lavalinkAudioService,
+    IAuditableOptionsSnapshot<DiscordOptions> discordOptions
+) : AniviaCommandModule(lavalinkAudioService)
 {
     private readonly IAuditableOptionsSnapshot<DiscordOptions> _discordOptions = discordOptions;
 
@@ -31,9 +35,7 @@ public sealed class PrefixModule(IAuditableOptionsSnapshot<DiscordOptions> disco
     [Command("add")]
     public async Task SetPrefixAsync(string prefix)
     {
-        _discordOptions.Update(
-            options => { options.CommandPrefixes.Add(prefix); }
-        );
+        _discordOptions.Update(options => { options.CommandPrefixes.Add(prefix); });
 
         await ReplyAsync($"'{prefix}' added");
     }

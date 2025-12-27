@@ -1,6 +1,6 @@
 server:
   port: 2333
-  
+
 plugins:
   youtube: # To read more about it's configuration visit https://github.com/lavalink-devs/youtube-source#plugin
     enabled: true
@@ -38,3 +38,14 @@ lavalink:
       vimeo: true
       http: true
       local: false
+
+logging:
+  level:
+    root: INFO 
+    lavalink: DEBUG
+    com.sedmelluq.discord.lavaplayer.tools.ExceptionTools: DEBUG
+    dev.lavalink.youtube: DEBUG
+  request:
+    enabled: true
+    includeClientInfo: true
+    includeQueryString: true

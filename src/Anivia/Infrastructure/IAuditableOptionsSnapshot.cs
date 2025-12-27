@@ -2,7 +2,7 @@
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Options;
 
-namespace Anivia.Options;
+namespace Anivia.Infrastructure;
 
 public interface IAuditableOptionsSnapshot<out T> : IOptionsMonitor<T> where T : class, new()
 {
@@ -15,9 +15,9 @@ internal sealed class AuditableOptionsSnapshot<T>(
     IHostEnvironment hostEnvironment
 ) : IAuditableOptionsSnapshot<T> where T : class, new()
 {
-    private readonly IOptionsMonitor<T> _optionsSnapshot = optionsSnapshot;
     private readonly IConfigurationSection _configurationSection = configurationSection;
     private readonly IHostEnvironment _hostEnvironment = hostEnvironment;
+    private readonly IOptionsMonitor<T> _optionsSnapshot = optionsSnapshot;
 
     public IDisposable OnChange(Action<T, string> listener)
     {
