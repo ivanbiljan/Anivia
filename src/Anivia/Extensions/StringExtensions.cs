@@ -2,9 +2,9 @@
 
 namespace Anivia.Extensions;
 
-public static class StringExtensions
+public static partial class StringExtensions
 {
-    private static readonly Regex DiscordMarkdownRegex = new("([*,_])");
+    private static readonly Regex DiscordMarkdownRegex = GeneratedDiscordMarkdownRegex();
 
     extension(string source)
     {
@@ -66,4 +66,7 @@ public static class StringExtensions
     {
         return timeSpan.Hours > 0 ? $"{timeSpan:hh\\:mm\\:ss}" : $"{timeSpan:mm\\:ss}";
     }
+
+    [GeneratedRegex("([*,_])")]
+    private static partial Regex GeneratedDiscordMarkdownRegex();
 }
