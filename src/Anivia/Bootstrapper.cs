@@ -1,8 +1,11 @@
+using Anivia.CommandModules;
 using Anivia.Infrastructure;
 using Discord;
 using Discord.Commands;
 using Discord.Interactions;
 using Discord.WebSocket;
+using Lavalink4NET;
+using Lavalink4NET.DiscordNet;
 
 namespace Anivia;
 
@@ -10,14 +13,15 @@ public sealed class Bootstrapper(
     DiscordSocketClient discordSocketClient,
     IAuditableOptionsSnapshot<DiscordOptions> discordOptions,
     CommandService commandService,
+    IAudioService lavalinkAudioService,
     PlaybackEventListener playbackEventListener,
     IServiceProvider serviceProvider,
-    
     ILogger<Bootstrapper> logger
 )
 {
     private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
     private readonly CommandService _commandService = commandService;
+    private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
     private readonly PlaybackEventListener _playbackEventListener = playbackEventListener;
     private readonly InteractionService _interactionService = new(discordSocketClient.Rest);
     private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
@@ -29,6 +33,7 @@ public sealed class Bootstrapper(
         _discordSocketClient.Ready += OnBotReadyAsync;
         _discordSocketClient.InteractionCreated += OnInteractionCreatedAsync;
         _discordSocketClient.MessageReceived += OnMessageReceivedAsync;
+        _discordSocketClient.UserVoiceStateUpdated += OnUserVoiceStateUpdatedAsync;
 
         _logger.LogInformation("Starting Discord socket client");
         await _discordSocketClient.LoginAsync(TokenType.Bot, _discordOptions.BotToken);
@@ -86,5 +91,24 @@ public sealed class Bootstrapper(
     {
         var ctx = new SocketInteractionContext(_discordSocketClient, interaction);
         await _interactionService.ExecuteCommandAsync(ctx, _serviceProvider);
+    }
+
+    private async Task OnUserVoiceStateUpdatedAsync(SocketUser user, SocketVoiceState state, SocketVoiceState _)
+    {
+        if (state.VoiceChannel.ConnectedUsers.Count >= 2)
+        {
+            return;
+        }
+
+        var player = await _lavalinkAudioService.Players.GetPlayerAsync(state.VoiceChannel.Guild);
+        if (player is not null)
+        {
+            await player.DisconnectAsync();
+            
+            var textChannel = _discordSocketClient.GetGuild(state.VoiceChannel.Guild.Id)
+                .GetTextChannel(_discordOptions.TextChannelId);
+        
+            await textChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
+        }
     }
 }

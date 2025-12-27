@@ -87,7 +87,7 @@ public sealed class PlaybackCommands(
                 .AddField("Playlist length", playlistDuration.ToString(@"hh\:mm\:ss"), true)
                 .AddField("Position in upcoming", positionInUpcoming == 1 ? "Next" : positionInUpcoming)
                 .AddField("Number of tracks", trackLoadResult.Tracks.Length, true)
-                .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
+                .WithFooter($"Requested by {Context.User.GlobalName ?? Context.User.Username}", Context.User.GetAvatarUrl())
                 .Build();
 
             await ReplyAsync(embed: embed);
@@ -95,9 +95,8 @@ public sealed class PlaybackCommands(
         else
         {
             var track = trackLoadResult.Track ?? trackLoadResult.Tracks.First();
-            await player.PlayAsync(track).ConfigureAwait(false);
 
-            if (player.CurrentTrack is not null)
+            if (player.State is PlayerState.Playing)
             {
                 var embed = new EmbedBuilder()
                     .WithTitle("Added Track")
@@ -109,11 +108,13 @@ public sealed class PlaybackCommands(
                     .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
                     // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
                     .AddField("Position in queue", player.Queue.Count, true)
-                    .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
+                    .WithFooter($"Requested by {Context.User.GlobalName ?? Context.User.Username}", Context.User.GetAvatarUrl())
                     .Build();
 
                 await ReplyAsync(embed: embed);
             }
+            
+            await player.PlayAsync(track).ConfigureAwait(false);
         }
     }
 
@@ -140,7 +141,7 @@ public sealed class PlaybackCommands(
         {
             queue.Add(player.CurrentItem);
         }
-        
+
         queue.AddRange(player.Queue);
 
         if (queue.Count == 0)
@@ -191,7 +192,9 @@ public sealed class PlaybackCommands(
                     )
                 )
                 .WithFooter(
-                    $"Current track: {player.CurrentTrack!.Title} [{player.Position!.Value.Position.ToShortString()} / {player.CurrentTrack.Duration.ToShortString()}]"
+                    player.CurrentTrack is not null
+                        ? $"Current track: {player.CurrentTrack!.Title} [{player.Position!.Value.Position.ToShortString()} / {player.CurrentTrack.Duration.ToShortString()}]"
+                        : string.Empty
                 );
         }
     }
