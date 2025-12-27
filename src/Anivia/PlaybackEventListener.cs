@@ -50,7 +50,7 @@ public sealed class PlaybackEventListener(
             return;
         }
 
-        if (player.Queue.Count == 0 && player.RepeatMode is TrackRepeatMode.None)
+        if (player.CurrentTrack is null && player.RepeatMode is TrackRepeatMode.None)
         {
             await player.Queue.History!.ClearAsync();
             await textChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));

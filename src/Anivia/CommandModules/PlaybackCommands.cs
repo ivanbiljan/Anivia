@@ -107,7 +107,7 @@ public sealed class PlaybackCommands(
                     // .AddField("Estimated time until played", "n")
                     .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
                     // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
-                    .AddField("Position in queue", player.Queue.Count, true)
+                    .AddField("Position in queue", player.Queue.Count + 1, true)
                     .WithFooter($"Requested by {Context.User.GlobalName ?? Context.User.Username}", Context.User.GetAvatarUrl())
                     .Build();
 
@@ -187,7 +187,7 @@ public sealed class PlaybackCommands(
                     string.Join(
                         Environment.NewLine,
                         tracks.Select((queueItem, ix) =>
-                            $@"{(queueItem == player.CurrentTrack ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{queueItem.Track!.Duration:hh\:mm\:ss}]` [{queueItem.Track.Title.AsBold()}]({queueItem.Track.Uri})"
+                            $@"{(queueItem.Identifier == player.CurrentTrack.Identifier ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{queueItem.Track!.Duration:hh\:mm\:ss}]` [{queueItem.Track.Title.AsBold()}]({queueItem.Track.Uri})"
                         )
                     )
                 )
@@ -241,55 +241,6 @@ public sealed class PlaybackCommands(
                 $"I will {(player.RepeatMode is TrackRepeatMode.Queue ? "now" : "no longer")} repeat the queue"
             )
         );
-    }
-
-    [Command("insert")]
-    [Summary("Insert a track right after the one that is currently playing")]
-    public async Task InsertTrackAsync([Remainder] string song)
-    {
-        var player = await GetPlayerAsync(connectToVoiceChannel: true);
-        if (player is null)
-        {
-            return;
-        }
-
-        var trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.YouTube);
-        if (trackLoadResult.IsFailed)
-        {
-            await ReplyAsync(
-                embed: Embeds.Error($"YouTube search failed: {trackLoadResult.Exception?.Message ?? "unknown error"}")
-            );
-        }
-
-        if (!trackLoadResult.HasMatches)
-        {
-            await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
-
-            return;
-        }
-
-        var track = trackLoadResult.Playlist?.SelectedTrack ??
-                    trackLoadResult.Track ?? trackLoadResult.Tracks.First();
-
-        await player.Queue.InsertAsync((player.Queue.History?.Count ?? -1) + 2, new TrackQueueItem(track));
-
-        if (player.Queue.Count > 1)
-        {
-            var embed = new EmbedBuilder()
-                .WithTitle("Added Track")
-                .WithThumbnailUrl(
-                    track.ArtworkUri?.ToString() ?? $"https://img.youtube.com/vi/{track.Identifier}/0.jpg"
-                )
-                .AddField("Track", $"[{track.Title}]({track.Uri})")
-                // .AddField("Estimated time until played", "n")
-                .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
-                // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
-                .AddField("Position in queue", player.Queue.Count, true)
-                .WithFooter($"Requested by {Context.User.Username}", Context.User.GetAvatarUrl())
-                .Build();
-
-            await ReplyAsync(embed: embed);
-        }
     }
 
     [Command("remove")]
