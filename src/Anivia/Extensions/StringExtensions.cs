@@ -6,6 +6,14 @@ public static partial class StringExtensions
 {
     private static readonly Regex DiscordMarkdownRegex = GeneratedDiscordMarkdownRegex();
 
+    public static string ToShortString(this TimeSpan timeSpan)
+    {
+        return timeSpan.Hours > 0 ? $"{timeSpan:hh\\:mm\\:ss}" : $"{timeSpan:mm\\:ss}";
+    }
+
+    [GeneratedRegex("([*,_])")]
+    private static partial Regex GeneratedDiscordMarkdownRegex();
+
     extension(string source)
     {
         public string AsBold()
@@ -16,11 +24,6 @@ public static partial class StringExtensions
         public string AsItalic()
         {
             return $"_{DiscordMarkdownRegex.Replace(source, "\\$1")}_";
-        }
-        
-        public string WithUnderline()
-        {
-            return $"__{DiscordMarkdownRegex.Replace(source, "\\$1")}__";
         }
 
         public int ComputeDistanceTo(string reference)
@@ -60,13 +63,10 @@ public static partial class StringExtensions
 
             return dp[source.Length, reference.Length];
         }
-    }
 
-    public static string ToShortString(this TimeSpan timeSpan)
-    {
-        return timeSpan.Hours > 0 ? $"{timeSpan:hh\\:mm\\:ss}" : $"{timeSpan:mm\\:ss}";
+        public string WithUnderline()
+        {
+            return $"__{DiscordMarkdownRegex.Replace(source, "\\$1")}__";
+        }
     }
-
-    [GeneratedRegex("([*,_])")]
-    private static partial Regex GeneratedDiscordMarkdownRegex();
 }

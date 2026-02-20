@@ -10,7 +10,7 @@ namespace Anivia.CommandModules;
 public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : AniviaCommandModule(lavalinkAudioService)
 {
     private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
-    
+
     [Command("shuffle")]
     [RequireUserInVoiceChannel]
     public async Task ShuffleQueueAsync()
@@ -57,7 +57,7 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
         {
             return;
         }
-        
+
         await player.PlayAsync(player.Queue[queueIndex]);
         await ReplyAsync(embed: Embeds.Success($"Jumped to track at position {position}"));
     }

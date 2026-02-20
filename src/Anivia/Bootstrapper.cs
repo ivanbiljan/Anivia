@@ -19,14 +19,14 @@ public sealed class Bootstrapper(
     ILogger<Bootstrapper> logger
 )
 {
-    private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
     private readonly CommandService _commandService = commandService;
-    private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
-    private readonly PlaybackEventListener _playbackEventListener = playbackEventListener;
-    private readonly InteractionService _interactionService = new(discordSocketClient.Rest);
     private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
+    private readonly InteractionService _interactionService = new(discordSocketClient.Rest);
+    private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
     private readonly ILogger<Bootstrapper> _logger = logger;
+    private readonly PlaybackEventListener _playbackEventListener = playbackEventListener;
+    private readonly IServiceProvider _serviceProvider = serviceProvider;
 
     public async Task InitializeAsync()
     {
@@ -39,22 +39,28 @@ public sealed class Bootstrapper(
         await _discordSocketClient.LoginAsync(TokenType.Bot, _discordOptions.BotToken);
         await _discordSocketClient.StartAsync();
     }
-    
+
     private async Task OnBotReadyAsync()
     {
         _logger.LogInformation("Discord socket client ready");
-        
+
         _logger.LogInformation("Initializing command modules");
         await _commandService.AddModulesAsync(typeof(Program).Assembly, _serviceProvider);
 
         _logger.LogInformation("Initializing interaction service");
         await _interactionService.AddModulesAsync(typeof(Program).Assembly, _serviceProvider);
         await _interactionService.RegisterCommandsGloballyAsync();
-        
+
         _logger.LogInformation("Registering playback event handlers");
         _playbackEventListener.Subscribe();
 
         _logger.LogInformation("Initialization complete");
+    }
+
+    private async Task OnInteractionCreatedAsync(SocketInteraction interaction)
+    {
+        var ctx = new SocketInteractionContext(_discordSocketClient, interaction);
+        await _interactionService.ExecuteCommandAsync(ctx, _serviceProvider);
     }
 
     private async Task OnMessageReceivedAsync(SocketMessage message)
@@ -86,12 +92,6 @@ public sealed class Bootstrapper(
             _serviceProvider
         );
     }
-    
-    private async Task OnInteractionCreatedAsync(SocketInteraction interaction)
-    {
-        var ctx = new SocketInteractionContext(_discordSocketClient, interaction);
-        await _interactionService.ExecuteCommandAsync(ctx, _serviceProvider);
-    }
 
     private async Task OnUserVoiceStateUpdatedAsync(SocketUser user, SocketVoiceState state, SocketVoiceState _)
     {
@@ -104,15 +104,17 @@ public sealed class Bootstrapper(
         if (player is not null)
         {
             await player.DisconnectAsync();
-            
+
             var textChannel = _discordSocketClient.GetGuild(state.VoiceChannel.Guild.Id)
-                .GetTextChannel(discordOptions.CurrentValue.TextChannels.GetValueOrDefault(state.VoiceChannel.Guild.Id));
+                .GetTextChannel(
+                    discordOptions.CurrentValue.TextChannels.GetValueOrDefault(state.VoiceChannel.Guild.Id)
+                );
 
             if (textChannel is null)
             {
                 return;
             }
-        
+
             await textChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
         }
     }

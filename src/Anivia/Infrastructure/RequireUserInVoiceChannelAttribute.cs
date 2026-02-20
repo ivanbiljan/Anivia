@@ -15,7 +15,7 @@ internal sealed class RequireUserInVoiceChannelAttribute : PreconditionAttribute
         if (context.User is not IVoiceState {VoiceChannel: not null})
         {
             await context.Channel.SendMessageAsync(embed: Embeds.Error("You are not in a voice channel"));
-            
+
             return PreconditionResult.FromError("You must be in a voice channel to use this command.");
         }
 

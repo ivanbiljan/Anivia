@@ -15,9 +15,9 @@ public sealed class PlaybackEventListener(
     ILogger<PlaybackEventListener> logger
 )
 {
-    private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
-    private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
     private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
+    private readonly DiscordSocketClient _discordSocketClient = discordSocketClient;
+    private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
     private readonly ILogger<PlaybackEventListener> _logger = logger;
 
     public void Subscribe()
@@ -26,23 +26,6 @@ public sealed class PlaybackEventListener(
         _lavalinkAudioService.TrackEnded += OnTrackEnded;
     }
 
-    private async Task OnTrackStarted(object sender, TrackStartedEventArgs eventArgs)
-    {
-        var textChannel = _discordSocketClient.GetGuild(eventArgs.Player.GuildId)
-            .GetTextChannel(discordOptions.CurrentValue.TextChannels.GetValueOrDefault(eventArgs.Player.GuildId));
-
-        if (textChannel is null)
-        {
-            return;
-        }
-        
-        var embed = new EmbedBuilder()
-            .WithDescription($"Started playing [{eventArgs.Track.Title}]({eventArgs.Track.Uri})")
-            .Build();
-
-        await textChannel.SendMessageAsync(embed: embed);
-    }
-    
     private async Task OnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
     {
         var textChannel = _discordSocketClient.GetGuild(eventArgs.Player.GuildId)
@@ -65,5 +48,22 @@ public sealed class PlaybackEventListener(
             await player.Queue.History!.ClearAsync();
             await textChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
         }
+    }
+
+    private async Task OnTrackStarted(object sender, TrackStartedEventArgs eventArgs)
+    {
+        var textChannel = _discordSocketClient.GetGuild(eventArgs.Player.GuildId)
+            .GetTextChannel(discordOptions.CurrentValue.TextChannels.GetValueOrDefault(eventArgs.Player.GuildId));
+
+        if (textChannel is null)
+        {
+            return;
+        }
+
+        var embed = new EmbedBuilder()
+            .WithDescription($"Started playing [{eventArgs.Track.Title}]({eventArgs.Track.Uri})")
+            .Build();
+
+        await textChannel.SendMessageAsync(embed: embed);
     }
 }

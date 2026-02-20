@@ -52,11 +52,12 @@ builder.Services.AddSingleton(
 
 builder.Services.AddLavalink();
 builder.Services.ConfigureLavalink(options =>
-{
-    var lavalinkConfig = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<LavalinkOptions>()!;
-    options.BaseAddress = new Uri(lavalinkConfig.Host);
-    options.Passphrase = lavalinkConfig.Password;
-});
+    {
+        var lavalinkConfig = builder.Configuration.GetSection(LavalinkOptions.SectionName).Get<LavalinkOptions>()!;
+        options.BaseAddress = new Uri(lavalinkConfig.Host);
+        options.Passphrase = lavalinkConfig.Password;
+    }
+);
 
 builder.Services.AddSingleton<Bootstrapper>();
 builder.Services.AddSingleton<PlaybackEventListener>();

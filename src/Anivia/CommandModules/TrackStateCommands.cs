@@ -20,7 +20,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         {
             return;
         }
-        
+
         await player.PauseAsync();
         await ReplyAsync(
             embed: Embeds.Success(
@@ -41,7 +41,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         }
 
         await player.ResumeAsync();
-        
+
         await ReplyAsync(embed: Embeds.Success("Track has been resumed :play_pause:"));
     }
 
@@ -54,7 +54,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         {
             return;
         }
-        
+
         var position = ParseTimestamp(timestamp);
         if (position is null)
         {
@@ -66,7 +66,9 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         await player.SeekAsync(position.Value);
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {position.Value.ToShortString()}/{player.CurrentTrack!.Duration.ToShortString()}"));
+                $"Track has been wound to {position.Value.ToShortString()}/{player.CurrentTrack!.Duration.ToShortString()}"
+            )
+        );
 
         return;
 
@@ -112,7 +114,9 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :rewind:"));
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :rewind:"
+            )
+        );
     }
 
     [Command("forward")]
@@ -130,6 +134,8 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :fast_forward:"));
+                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :fast_forward:"
+            )
+        );
     }
 }
