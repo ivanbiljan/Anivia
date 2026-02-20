@@ -106,7 +106,12 @@ public sealed class Bootstrapper(
             await player.DisconnectAsync();
             
             var textChannel = _discordSocketClient.GetGuild(state.VoiceChannel.Guild.Id)
-                .GetTextChannel(_discordOptions.TextChannelId);
+                .GetTextChannel(discordOptions.CurrentValue.TextChannels.GetValueOrDefault(state.VoiceChannel.Guild.Id));
+
+            if (textChannel is null)
+            {
+                return;
+            }
         
             await textChannel.SendMessageAsync(embed: Embeds.Error("Stopping because everyone left"));
         }

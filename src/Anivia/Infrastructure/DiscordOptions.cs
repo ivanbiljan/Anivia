@@ -10,7 +10,7 @@ public sealed class DiscordOptions
 
     public string ClientSecret { get; set; }
 
-    public ulong TextChannelId { get; set; }
+    public Dictionary<ulong, ulong> TextChannels { get; set; }
 
     public List<string> CommandPrefixes { get; set; } = new();
 }

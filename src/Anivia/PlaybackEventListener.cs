@@ -29,8 +29,13 @@ public sealed class PlaybackEventListener(
     private async Task OnTrackStarted(object sender, TrackStartedEventArgs eventArgs)
     {
         var textChannel = _discordSocketClient.GetGuild(eventArgs.Player.GuildId)
-            .GetTextChannel(discordOptions.CurrentValue.TextChannelId);
+            .GetTextChannel(discordOptions.CurrentValue.TextChannels.GetValueOrDefault(eventArgs.Player.GuildId));
 
+        if (textChannel is null)
+        {
+            return;
+        }
+        
         var embed = new EmbedBuilder()
             .WithDescription($"Started playing [{eventArgs.Track.Title}]({eventArgs.Track.Uri})")
             .Build();
@@ -41,7 +46,12 @@ public sealed class PlaybackEventListener(
     private async Task OnTrackEnded(object sender, TrackEndedEventArgs eventArgs)
     {
         var textChannel = _discordSocketClient.GetGuild(eventArgs.Player.GuildId)
-            .GetTextChannel(discordOptions.CurrentValue.TextChannelId);
+            .GetTextChannel(discordOptions.CurrentValue.TextChannels.GetValueOrDefault(eventArgs.Player.GuildId));
+
+        if (textChannel is null)
+        {
+            return;
+        }
 
         if (eventArgs.Player is not QueuedLavalinkPlayer player)
         {
