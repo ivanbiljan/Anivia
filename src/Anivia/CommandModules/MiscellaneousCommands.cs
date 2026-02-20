@@ -15,16 +15,16 @@ namespace Anivia.CommandModules;
 [Name("Misc")]
 public sealed class MiscellaneousCommands(
     CommandService commandService,
-    IOptionsMonitor<DiscordOptions> discordOptions,
+    IAuditableOptionsSnapshot<DiscordOptions> discordOptions,
     IOptionsMonitor<LavalinkOptions> lavalinkOptions,
     InteractiveService interactiveService
 ) : ModuleBase
 {
     private static readonly GoogleScraper Scraper = new();
-    private readonly DiscordOptions _discordOptions = discordOptions.CurrentValue;
-    private readonly LavalinkOptions _lavalinkOptions = lavalinkOptions.CurrentValue;
     private readonly CommandService _commandService = commandService;
+    private readonly IAuditableOptionsSnapshot<DiscordOptions> _discordOptions = discordOptions;
     private readonly InteractiveService _interactiveService = interactiveService;
+    private readonly LavalinkOptions _lavalinkOptions = lavalinkOptions.CurrentValue;
 
     [Command("config")]
     [Summary("Displays the configuration")]
@@ -34,7 +34,7 @@ public sealed class MiscellaneousCommands(
         {
             discord = new
             {
-                prefixes = _discordOptions.CommandPrefixes
+                prefixes = _discordOptions.CurrentValue.CommandPrefixes
             },
             lavalink = _lavalinkOptions
         };
@@ -59,9 +59,9 @@ public sealed class MiscellaneousCommands(
         if (!string.IsNullOrWhiteSpace(commandString))
         {
             var embedBuilder = new EmbedBuilder();
-            var command = _commandService.Commands.FirstOrDefault(
-                c => string.Equals(c.Name, commandString, StringComparison.InvariantCultureIgnoreCase) ||
-                     c.Aliases.Any(a => string.Equals(a, commandString, StringComparison.InvariantCultureIgnoreCase))
+            var command = _commandService.Commands.FirstOrDefault(c =>
+                string.Equals(c.Name, commandString, StringComparison.InvariantCultureIgnoreCase) ||
+                c.Aliases.Any(a => string.Equals(a, commandString, StringComparison.InvariantCultureIgnoreCase))
             );
 
             if (command is null)
@@ -110,8 +110,7 @@ public sealed class MiscellaneousCommands(
             var commandSummaries = string.Join(
                 Environment.NewLine,
                 modules[index]
-                    .Commands.Select(
-                        c => $"**{c.Name ?? "balls"}**: {c.Summary?.AsItalic() ?? " mater ti jebem"}"
+                    .Commands.Select(c => $"**{c.Name ?? "balls"}**: {c.Summary?.AsItalic() ?? " mater ti jebem"}"
                     )
             );
 
@@ -174,8 +173,7 @@ public sealed class MiscellaneousCommands(
             timeout: TimeSpan.FromSeconds(30)
         );
 
-        await msg.ModifyAsync(
-            x =>
+        await msg.ModifyAsync(x =>
             {
                 x.Content = result.IsSuccess
                     ? $"{MentionUtils.MentionUser(result.Value!.UserId)} reacted: {result.Value.Emote}"
@@ -193,5 +191,30 @@ public sealed class MiscellaneousCommands(
     {
         var socketClient = (DiscordSocketClient) Context.Client;
         await ReplyAsync($"Pong: {socketClient.Latency} ms");
+    }
+
+    [Command("settextchannel")]
+    [Alias("stc")]
+    [Summary("Sets the text channel for the player in the current guild")]
+    [Remarks("settextchannel <channel_id>")]
+    public async Task SetTextChannelAsync(ulong channelId)
+    {
+        var guildId = Context.Guild.Id;
+        var channel = await Context.Guild.GetTextChannelAsync(channelId);
+        if (channel is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("Invalid text channel ID"));
+
+            return;
+        }
+
+        _discordOptions.Update(options =>
+            {
+                options.TextChannels ??= new Dictionary<ulong, ulong>();
+                options.TextChannels[guildId] = channelId;
+            }
+        );
+
+        await ReplyAsync(embed: Embeds.Success($"Text channel set to {channel.Mention}"));
     }
 }
