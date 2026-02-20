@@ -36,6 +36,7 @@ public sealed class MiscellaneousCommands(
             {
                 prefixes = _discordOptions.CurrentValue.CommandPrefixes
             },
+            textChannels = _discordOptions.CurrentValue.TextChannels,
             lavalink = _lavalinkOptions
         };
 

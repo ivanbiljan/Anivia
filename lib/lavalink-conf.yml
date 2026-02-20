@@ -28,6 +28,10 @@ lavalink:
     # Replace VERSION with the current version as shown by the Releases tab or a long commit hash for snapshots.
     - dependency: "dev.lavalink.youtube:youtube-plugin:1.16.0"
       repository: "https://maven.lavalink.dev/releases" # use https://maven.lavalink.dev/snapshots if you want to use a snapshot version.
+    - dependency: "com.github.topi314.lavasrc:lavasrc-plugin:4.8.1"
+      repository: "https://maven.lavalink.dev/releases"
+    - dependency: "com.github.topi314.lavasearch:lavasearch-plugin:1.0.0"
+      repository: "https://maven.lavalink.dev/releases"
   server:
     password: "admin"
     sources:
@@ -38,10 +42,23 @@ lavalink:
       vimeo: true
       http: true
       local: false
+      
+lavasrc:
+  providers:
+    - "ytsearch:\"%ISRC%\""       # first: exact match via ISRC on YT if metadata has it
+    - "ytsearch:%QUERY%"          # fallback to normal YT search
+    - "spsearch:%QUERY%"          # Spotify metadata search
+    - "sprec:%QUERY%"             # Spotify recommendations if nothing else
+  spotify:
+#    clientId: "your_spotify_id"
+#    clientSecret: "your_spotify_secret"
+    countryCode: "HR"
+  applemusic: false
+  deezer: false
 
 logging:
   level:
-    root: INFO 
+    root: INFO
     lavalink: DEBUG
     com.sedmelluq.discord.lavaplayer.tools.ExceptionTools: DEBUG
     dev.lavalink.youtube: DEBUG
