@@ -52,7 +52,7 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
             return;
         }
 
-        var queueIndex = position - 1;
+        var queueIndex = player.Queue.History?.Count ?? 0 + position - 1;
         if (queueIndex < 0 || queueIndex >= player.Queue.Count)
         {
             return;
