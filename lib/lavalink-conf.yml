@@ -24,16 +24,18 @@ plugins:
       visitorData: "MnRuJyEtJOv8LW4fImJbwY4qXcflEPdSWXwKWnQappnJt4Ee_3bFCJEUmiePXV3jvyjxMuT8pE3j-ZKoLtF-bIjo7-erKATkj38QRYgrGRsEHDC97Qk9a-tcYdXpmMQt2h6A1S325QgSsRfbfjBfBTeDq_oZBA=="
   lavasrc:
     sources:
-      youtube: true
+      youtube: false
       spotify: true
     providers:
-      - "ytsearch:\"%ISRC%\""       # first: exact match via ISRC on YT if metadata has it
-      - "ytsearch:%QUERY%"          # fallback to normal YT search
-      - "spsearch:%QUERY%"          # Spotify metadata search
-      - "sprec:%QUERY%"             # Spotify recommendations if nothing else
+      - "spsearch"
+      - "spsearch:*"
+      - "spsearch:\"%ISRC%\"" # Will be ignored if track does not have an ISRC. See https://en.wikipedia.org/wiki/International_Standard_Recording_Code
+      - "spsearch:%QUERY%" # Will be used if track has no ISRC or no track could be found for the ISRC
+      - "ytsearch:\"%ISRC%\""     # resolve to YT via ISRC
+      - "ytsearch:%QUERY%"        # fallback YT search
     spotify:
-      #    clientId: "your_spotify_id"
-      #    clientSecret: "your_spotify_secret"
+      clientId: "client_id"
+      clientSecret: "client_secret"
       countryCode: "HR"
 
 lavalink:

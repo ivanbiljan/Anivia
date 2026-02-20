@@ -227,8 +227,17 @@ public sealed class PlaybackCommands(
             return;
         }
 
-        var trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.YouTube)
-            .ConfigureAwait(false);
+        TrackLoadResult trackLoadResult;
+        if (Uri.TryCreate(song, UriKind.Absolute, out var link))
+        {
+            trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.None)
+                .ConfigureAwait(false);
+        }
+        else
+        {
+            trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.YouTube)
+                .ConfigureAwait(false);
+        }
 
         if (!trackLoadResult.HasMatches)
         {
