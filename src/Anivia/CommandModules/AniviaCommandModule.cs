@@ -1,6 +1,6 @@
+using Anivia.Infrastructure;
 using Discord.Commands;
 using Lavalink4NET;
-using Lavalink4NET.Clients;
 using Lavalink4NET.DiscordNet;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
@@ -11,19 +11,18 @@ public abstract class AniviaCommandModule(IAudioService lavalinkAudioService) : 
 {
     private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
 
-    protected async ValueTask<QueuedLavalinkPlayer?> GetPlayerAsync(bool connectToVoiceChannel = true)
+    protected async ValueTask<AniviaPlayer?> GetPlayerAsync(bool connectToVoiceChannel = true)
     {
         var channelBehavior = connectToVoiceChannel
             ? PlayerChannelBehavior.Join
             : PlayerChannelBehavior.None;
 
         var retrieveOptions = new PlayerRetrieveOptions(
-            channelBehavior,
-            MemberVoiceStateBehavior.Ignore
+            channelBehavior
         );
 
         var result = await _lavalinkAudioService.Players
-            .RetrieveAsync(Context, PlayerFactory.Queued, retrieveOptions)
+            .RetrieveAsync<AniviaPlayer, LavalinkPlayerOptions>(Context, CreatePlayerAsync, retrieveOptions)
             .ConfigureAwait(false);
 
         if (!result.IsSuccess)
@@ -41,5 +40,13 @@ public abstract class AniviaCommandModule(IAudioService lavalinkAudioService) : 
         }
 
         return result.Player;
+        
+        static ValueTask<AniviaPlayer> CreatePlayerAsync(IPlayerProperties<AniviaPlayer, LavalinkPlayerOptions> properties, CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            ArgumentNullException.ThrowIfNull(properties);
+
+            return ValueTask.FromResult(new AniviaPlayer(properties));
+        }
     }
 }

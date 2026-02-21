@@ -36,7 +36,7 @@ public sealed class PlaybackEventListener(
             return;
         }
 
-        if (eventArgs.Player is not QueuedLavalinkPlayer player)
+        if (eventArgs.Player is not AniviaPlayer player)
         {
             _logger.LogCritical("Expected a queued Lavalink player, but got {PlayerType}", eventArgs.Player.GetType());
 
@@ -45,7 +45,6 @@ public sealed class PlaybackEventListener(
 
         if (player.CurrentTrack is null && player.RepeatMode is TrackRepeatMode.None)
         {
-            await player.Queue.History!.ClearAsync();
             await textChannel.SendMessageAsync(embed: Embeds.Error("There are no more tracks"));
         }
     }

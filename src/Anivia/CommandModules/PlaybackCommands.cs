@@ -33,12 +33,7 @@ public sealed class PlaybackCommands(
             return;
         }
 
-        await player.Queue.ClearAsync();
-        if (player.Queue.History is not null)
-        {
-            await player.Queue.History.ClearAsync();
-        }
-
+        player.Queue.Clear();
         await player.StopAsync();
 
         await ReplyAsync(embed: Embeds.Success("Cleared the queue"));
@@ -57,18 +52,7 @@ public sealed class PlaybackCommands(
         }
 
         const int tracksPerPage = 10;
-        var queue = new List<ITrackQueueItem>();
-        if (player.Queue.History is not null)
-        {
-            queue.AddRange(player.Queue.History);
-        }
-
-        if (player.CurrentItem is not null)
-        {
-            queue.Add(player.CurrentItem);
-        }
-
-        queue.AddRange(player.Queue);
+        var queue = player.Queue.Tracks;
 
         if (queue.Count == 0)
         {
@@ -113,7 +97,7 @@ public sealed class PlaybackCommands(
                     string.Join(
                         Environment.NewLine,
                         tracks.Select((queueItem, ix) =>
-                            $@"{(queueItem.Identifier == player.CurrentTrack.Identifier ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{queueItem.Track!.Duration:hh\:mm\:ss}]` [{queueItem.Track.Title.AsBold()}]({queueItem.Track.Uri})"
+                            $@"{(queueItem.Identifier == player.CurrentTrack.Identifier ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{queueItem.Duration:hh\:mm\:ss}]` [{queueItem.Title.AsBold()}]({queueItem.Uri})"
                         )
                     )
                 )
@@ -195,38 +179,20 @@ public sealed class PlaybackCommands(
     [Alias("mv")]
     public async Task MoveTrackAsync(int from, int to)
     {
-        // TODO
         var player = await GetPlayerAsync();
         if (player is null)
         {
             return;
         }
-
-        if (from == to)
+        
+        if (player.MoveTrack(from - 1, to - 1))
         {
-            await ReplyAsync(embed: Embeds.Error("Invalid indices"));
-            
-            return;
+            await ReplyAsync(embed: Embeds.Success("Track moved"));
         }
-
-        if (to < from)
+        else
         {
-            (from, to) = (to, from);
+            await ReplyAsync(embed: Embeds.Error("Swap failed"));
         }
-
-        var queue = player.Queue;
-        if (from < 1 || from > queue.Count || to < 1 || to > queue.Count)
-        {
-            await ReplyAsync(embed: Embeds.Error("Invalid indices"));
-
-            return;
-        }
-
-        var fromQueueItem = queue[from];
-        await queue.InsertAsync(to, fromQueueItem);
-        await queue.RemoveAtAsync(from);
-
-        await ReplyAsync(embed: Embeds.Success("Track moved"));
     }
 
     [Command("play", RunMode = RunMode.Async)]
@@ -235,7 +201,7 @@ public sealed class PlaybackCommands(
     [RequireUserInVoiceChannel]
     public async Task PlayAsync([Remainder] string song)
     {
-        var player = await GetPlayerAsync(true).ConfigureAwait(false);
+        var player = await GetPlayerAsync().ConfigureAwait(false);
         if (player is null)
         {
             return;
@@ -332,38 +298,16 @@ public sealed class PlaybackCommands(
         }
 
         var index = position - 1;
-        
-        LavalinkTrack? track;
-        if (player.Queue.History is not null && index <= player.Queue.History.Count)
-        {
-            if (index == player.Queue.History.Count)
-            {
-                track = player.CurrentTrack;
-                await player.SkipAsync();
-                await player.Queue.History.RemoveAtAsync(player.Queue.History.Count - 1);
-            }
-            else
-            {
-                track = player.Queue.History.ElementAtOrDefault(index)?.Track;
-                await player.Queue.History.RemoveAtAsync(index);
-            }
-        }
-        else
-        {
-            index = player.Queue.History is null ? index - 1 : index - player.Queue.History.Count - 1; 
-            
-            track = player.Queue.ElementAtOrDefault(index)?.Track;
-            await player.Queue.RemoveAtAsync(index);
-        }
-        
-        if (track is null)
+        if (index < 0 || index >= player.Queue.Count)
         {
             await ReplyAsync(embed: Embeds.Error("Invalid track position"));
-            
+
             return;
         }
 
-        await player.Queue.RemoveAtAsync(position).ConfigureAwait(false);
+        var track = player.Queue[index]!;
+        player.Queue.RemoveAt(index);
+        
         await ReplyAsync(embed: Embeds.Success($"Removed track [{track.Title}]({track.Uri})"));
     }
 }

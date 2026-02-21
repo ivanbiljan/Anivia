@@ -21,7 +21,7 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
             return;
         }
 
-        await player.Queue.ShuffleAsync();
+        player.Queue.Shuffle();
         await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
     }
 
@@ -51,14 +51,14 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
         {
             return;
         }
-
-        var queueIndex = player.Queue.History?.Count ?? 0 + position - 1;
-        if (queueIndex < 0 || queueIndex >= player.Queue.Count)
+        
+        var nextTrack = player.Queue[position - 1];
+        if (nextTrack is null)
         {
             return;
         }
-        
-        await player.PlayAsync(player.Queue[queueIndex]);
+
+        await player.PlayAsync(nextTrack);
         await ReplyAsync(embed: Embeds.Success($"Jumped to track at position {position}"));
     }
 }
