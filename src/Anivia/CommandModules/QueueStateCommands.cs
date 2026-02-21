@@ -58,7 +58,7 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
             return;
         }
 
-        await player.PlayAsync(nextTrack);
+        await player.JumpToAsync(position - 1);
         await ReplyAsync(embed: Embeds.Success($"Jumped to track at position {position}"));
     }
 }

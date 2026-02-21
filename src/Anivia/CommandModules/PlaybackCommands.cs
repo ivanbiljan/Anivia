@@ -5,6 +5,7 @@ using Discord.Commands;
 using Fergun.Interactive;
 using Fergun.Interactive.Pagination;
 using Lavalink4NET;
+using Lavalink4NET.Filters;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
@@ -21,6 +22,62 @@ public sealed class PlaybackCommands(
 {
     private readonly InteractiveService _interactiveService = interactiveService;
     private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
+    
+    [Command("bassboost")]
+    [Alias("bb")]
+    [Summary("Sets the bass boost level")]
+    [Remarks("bassboost <low|normal|medium|high>")]
+    [RequireUserInVoiceChannel]
+    public async Task BassBoostAsync(string level)
+    {
+        var player = await GetPlayerAsync();
+        if (player is null)
+        {
+            return;
+        }
+
+        var equalizer = level.ToLowerInvariant() switch
+        {
+            "low" => new Equalizer
+            {
+                Band0 = 0.15f,
+                Band1 = 0.10f,
+                Band2 = 0.05f
+            },
+            "medium" => new Equalizer
+            {
+                Band0 = 0.35f,
+                Band1 = 0.25f,
+                Band2 = 0.15f,
+                Band3 = 0.05f
+            },
+            "high" => new Equalizer
+            {
+                Band0 = 0.60f,
+                Band1 = 0.45f,
+                Band2 = 0.25f,
+                Band3 = 0.10f
+            },
+            "normal" => new Equalizer(),
+            _        => null
+        };
+
+        if (equalizer is null)
+        {
+            await ReplyAsync(embed: Embeds.Error("Invalid level. Use `low`, `normal`, or `high`"));
+            return;
+        }
+
+        var filters = player.Filters;
+        filters.Equalizer = new EqualizerFilterOptions(equalizer);
+        await filters.CommitAsync();
+
+        var message = level.ToLowerInvariant() == "normal"
+            ? "Bass boost disabled"
+            : $"Bass boost set to **{level.ToLowerInvariant()}**";
+
+        await ReplyAsync(embed: Embeds.Success(message));
+    }
 
     [Command("clear")]
     [Summary("Clears the current queue")]
@@ -208,7 +265,7 @@ public sealed class PlaybackCommands(
         }
 
         TrackLoadResult trackLoadResult;
-        if (Uri.TryCreate(song, UriKind.Absolute, out var link))
+        if (Uri.TryCreate(song, UriKind.Absolute, out _))
         {
             trackLoadResult = await _lavalinkAudioService.Tracks.LoadTracksAsync(song, TrackSearchMode.None)
                 .ConfigureAwait(false);
