@@ -46,7 +46,9 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
     }
 
     [Command("seek")]
+    [Summary("Seeks the current track")]
     [Alias("wind to")]
+    [Remarks("seek <seconds>, seek 1m30s, seek 1:30")]
     public async Task SeekAsync(string timestamp)
     {
         var player = await GetPlayerAsync();
@@ -56,7 +58,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         }
 
         var position = ParseTimestamp(timestamp);
-        if (position is null)
+        if (position is null || position.Value >= player.CurrentTrack.Duration)
         {
             await ReplyAsync(embed: Embeds.Error("Invalid timestamp"));
 
@@ -66,7 +68,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         await player.SeekAsync(position.Value);
         await ReplyAsync(
             embed: Embeds.Success(
-                $"Track has been wound to {position.Value.ToShortString()}/{player.CurrentTrack!.Duration.ToShortString()}"
+                $"Track has been wound to {position.Value.ToShortString()}/{player.CurrentTrack!.Duration.ToShortString()} :fast_forward:"
             )
         );
 
@@ -76,12 +78,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         {
             if (int.TryParse(input, out var inputSeconds))
             {
-                if (inputSeconds is >= 0 and <= 60)
-                {
-                    return TimeSpan.FromSeconds(inputSeconds);
-                }
-
-                return null;
+                return TimeSpan.FromSeconds(inputSeconds);
             }
             
             if (TimeSpan.TryParse(input, out var result))
@@ -131,6 +128,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
     [Command("forward")]
     [Alias("f")]
+    [Summary("Forwards the current track by a number of seconds")]
     public async Task WindCurrentTrackForwardAsync(int seconds)
     {
         var player = await GetPlayerAsync();
