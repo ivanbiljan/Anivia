@@ -74,6 +74,16 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
         static TimeSpan? ParseTimestamp(string input)
         {
+            if (int.TryParse(input, out var inputSeconds))
+            {
+                if (inputSeconds is >= 0 and <= 60)
+                {
+                    return TimeSpan.FromSeconds(inputSeconds);
+                }
+
+                return null;
+            }
+            
             if (TimeSpan.TryParse(input, out var result))
             {
                 return result;
