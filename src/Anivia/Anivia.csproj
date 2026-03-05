@@ -9,13 +9,13 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Discord.Net.Commands" Version="3.18.0"/>
-        <PackageReference Include="Discord.Net.Interactions" Version="3.18.0"/>
-        <PackageReference Include="Discord.Net.WebSocket" Version="3.18.0"/>
+        <PackageReference Include="Discord.Net.Commands" Version="3.19.0" />
+        <PackageReference Include="Discord.Net.Interactions" Version="3.19.0" />
+        <PackageReference Include="Discord.Net.WebSocket" Version="3.19.0" />
         <PackageReference Include="Fergun.Interactive" Version="1.9.1"/>
         <PackageReference Include="GScraper" Version="1.1.3"/>
-        <PackageReference Include="Lavalink4NET.Discord.NET" Version="4.1.0"/>
-        <PackageReference Include="Lavalink4NET.Integrations.Lavasrc" Version="4.1.0"/>
+        <PackageReference Include="Lavalink4NET.Discord.NET" Version="4.2.0" />
+        <PackageReference Include="Lavalink4NET.Integrations.Lavasrc" Version="4.2.0" />
         <PackageReference Include="YouTubeSearch" Version="2.2.6"/>
     </ItemGroup>
 
