@@ -153,15 +153,15 @@ public sealed class UnifiedQueue
     public IReadOnlyList<LavalinkTrack> History =>
         Position > 0 ? _tracks.GetRange(0, Position) : [];
 
+    public LavalinkTrack? this[int trackIndex] =>
+        trackIndex < 0 || trackIndex >= _tracks.Count ? null : _tracks[trackIndex];
+
     public int Position { get; private set; } = -1;
 
     public IReadOnlyList<LavalinkTrack> Tracks => _tracks.AsReadOnly();
 
     public IReadOnlyList<LavalinkTrack> Upcoming =>
         Position + 1 < _tracks.Count ? _tracks.GetRange(Position + 1, _tracks.Count - Position - 1) : [];
-
-    public LavalinkTrack? this[int trackIndex] =>
-        trackIndex < 0 || trackIndex >= _tracks.Count ? null : _tracks[trackIndex];
 
     public void Clear()
     {

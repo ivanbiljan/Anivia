@@ -1,32 +1,22 @@
 using Anivia.Extensions;
 using Anivia.Infrastructure;
-using Discord;
-using Discord.Commands;
-using Fergun.Interactive;
-using Fergun.Interactive.Pagination;
 using Lavalink4NET;
 using Lavalink4NET.Filters;
 using Lavalink4NET.Players;
 using Lavalink4NET.Players.Queued;
 using Lavalink4NET.Rest.Entities.Tracks;
-using Lavalink4NET.Tracks;
-using RunMode = Discord.Commands.RunMode;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace Anivia.CommandModules;
 
-[Name("Playback")]
 public sealed class PlaybackCommands(
-    IAudioService lavalinkAudioService,
-    InteractiveService interactiveService
+    IAudioService lavalinkAudioService
 ) : AniviaCommandModule(lavalinkAudioService)
 {
-    private readonly InteractiveService _interactiveService = interactiveService;
     private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
-    
-    [Command("bassboost")]
-    [Alias("bb")]
-    [Summary("Sets the bass boost level")]
-    [Remarks("bassboost <low|normal|medium|high>")]
+
+    [AniviaCommand("bassboost", "Playback", "Sets the bass boost level: low|normal|medium|high", "bb")]
     [RequireUserInVoiceChannel]
     public async Task BassBoostAsync(string level)
     {
@@ -64,7 +54,10 @@ public sealed class PlaybackCommands(
 
         if (equalizer is null)
         {
-            await ReplyAsync(embed: Embeds.Error("Invalid level. Use `low`, `normal`, or `high`"));
+            await ReplyAsync(
+                new ReplyMessageProperties {Embeds = [Embeds.Error("Invalid level. Use `low`, `normal`, or `high`")]}
+            );
+
             return;
         }
 
@@ -76,11 +69,10 @@ public sealed class PlaybackCommands(
             ? "Bass boost disabled"
             : $"Bass boost set to **{level.ToLowerInvariant()}**";
 
-        await ReplyAsync(embed: Embeds.Success(message));
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Success(message)]});
     }
 
-    [Command("clear")]
-    [Summary("Clears the current queue")]
+    [AniviaCommand("clear", "Playback", "Clears the current queue")]
     [RequireUserInVoiceChannel]
     public async Task ClearQueueAsync()
     {
@@ -93,13 +85,10 @@ public sealed class PlaybackCommands(
         player.Queue.Clear();
         await player.StopAsync();
 
-        await ReplyAsync(embed: Embeds.Success("Cleared the queue"));
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Success("Cleared the queue")]});
     }
 
-    [Command("queue", RunMode = RunMode.Async)]
-    [Alias("q")]
-    [Summary("Displays the current queue")]
-    [Remarks("queue [page number]")]
+    [AniviaCommand("queue", "Playback", "Displays the current queue", "q")]
     public async Task DisplayQueueAsync()
     {
         var player = await GetPlayerAsync();
@@ -108,76 +97,48 @@ public sealed class PlaybackCommands(
             return;
         }
 
-        const int tracksPerPage = 10;
         var queue = player.Queue.Tracks;
 
         if (queue.Count == 0)
         {
-            await ReplyAsync(embed: Embeds.Error("The queue is empty"));
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Error("The queue is empty")]});
 
             return;
         }
 
-        var maxPages = (int) Math.Ceiling((double) queue.Count / tracksPerPage);
+        const int tracksPerPage = 10;
+        var tracks = queue.Take(tracksPerPage);
 
-        var paginator = new LazyPaginatorBuilder()
-            .WithUsers(Context.User)
-            .WithPageFactory(GeneratePage)
-            .WithMaxPageIndex(maxPages - 1)
-            .AddOption(new Emoji("⏪"), PaginatorAction.SkipToStart)
-            .AddOption(new Emoji("◀"), PaginatorAction.Backward) // Use different emojis and option order.
-            .AddOption(new Emoji("▶"), PaginatorAction.Forward)
-            .AddOption(new Emoji("⏩"), PaginatorAction.SkipToEnd)
-            .AddOption(new Emoji("🔢"), PaginatorAction.Jump) // Use the jump feature
-            .WithCacheLoadedPages(
-                false
-            ) // The lazy paginator caches generated pages by default but it's possible to disable this.
-            .WithActionOnCancellation(ActionOnStop.DeleteMessage) // Delete the message after pressing the stop emoji.
-            .WithActionOnTimeout(ActionOnStop.DeleteInput) // Disable the input (buttons) after a timeout.
-            .WithFooter(
-                PaginatorFooter
-                    .None
-            ) // Do not override the page footer. This allows us to write our own page footer in the page factory.
-            .Build();
+        var description = string.Join(
+            Environment.NewLine,
+            tracks.Select((queueItem, ix) =>
+                $@"{(queueItem.Identifier == player.CurrentTrack?.Identifier ? "🎶 " : string.Empty)}{ix + 1} - `[{queueItem.Duration:hh\:mm\:ss}]` [{queueItem.Title.AsBold()}]({queueItem.Uri})"
+            )
+        );
 
-        await _interactiveService.SendPaginatorAsync(paginator, Context.Channel, TimeSpan.FromMinutes(3));
+        var footer = player.CurrentTrack is not null
+            ? $"Current track: {player.CurrentTrack.Title} [{player.Position!.Value.Position.ToShortString()} / {player.CurrentTrack.Duration.ToShortString()}] | {queue.Count} tracks total"
+            : $"{queue.Count} tracks total";
 
-        return;
-
-        PageBuilder GeneratePage(int index)
+        var embed = new EmbedProperties
         {
-            var tracks = queue.Skip(index * tracksPerPage).Take(tracksPerPage);
+            Title = "Queue",
+            Description = description,
+            Footer = new EmbedFooterProperties {Text = footer}
+        };
 
-            return new PageBuilder()
-                .WithTitle($"Page {$"{index + 1}/{maxPages}".AsBold()}")
-                .WithDescription(
-                    string.Join(
-                        Environment.NewLine,
-                        tracks.Select((queueItem, ix) =>
-                            $@"{(queueItem.Identifier == player.CurrentTrack.Identifier ? "🎶 " : string.Empty)}{index * tracksPerPage + ix + 1} - `[{queueItem.Duration:hh\:mm\:ss}]` [{queueItem.Title.AsBold()}]({queueItem.Uri})"
-                        )
-                    )
-                )
-                .WithFooter(
-                    player.CurrentTrack is not null
-                        ? $"Current track: {player.CurrentTrack!.Title} [{player.Position!.Value.Position.ToShortString()} / {player.CurrentTrack.Duration.ToShortString()}]"
-                        : string.Empty
-                );
-        }
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [embed]});
     }
 
-    [Command("join")]
-    [Summary("Makes me join your voice channel")]
+    [AniviaCommand("join", "Playback", "Makes me join your voice channel")]
     [RequireUserInVoiceChannel]
     public async Task JoinCurrentVoiceChannelAsync()
     {
-        var voiceState = (IVoiceState) Context.User;
-        await voiceState.VoiceChannel.ConnectAsync(true);
-        await ReplyAsync(embed: Embeds.Success("I have been summoned"));
+        await GetPlayerAsync();
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Success("I have been summoned")]});
     }
 
-    [Command("leave")]
-    [Summary("Makes me leave the voice channel")]
+    [AniviaCommand("leave", "Playback", "Makes me leave the voice channel")]
     [RequireUserInVoiceChannel]
     public async Task LeaveAsync()
     {
@@ -188,52 +149,18 @@ public sealed class PlaybackCommands(
         }
     }
 
-    [Command("loop current")]
-    [Alias("loop", "repeat", "repeat current")]
+    [AniviaCommand("loop", "Playback", "Loops the current track or queue", "repeat")]
     [RequireUserInVoiceChannel]
-    public async Task LoopCurrentSong()
+    public Task LoopAsync([CommandParameter(Remainder = true)] string sub = "current")
     {
-        var player = await GetPlayerAsync();
-        if (player is null)
+        return sub switch
         {
-            return;
-        }
-
-        player.RepeatMode = player.RepeatMode is not TrackRepeatMode.Track
-            ? TrackRepeatMode.Track
-            : TrackRepeatMode.None;
-
-        await ReplyAsync(
-            embed: Embeds.Success(
-                $"I will {(player.RepeatMode is TrackRepeatMode.Track ? "now" : "no longer")} repeat the current track"
-            )
-        );
+            "queue" => ToggleQueueLoopAsync(),
+            _       => ToggleCurrentTrackLoopAsync()
+        };
     }
 
-    [Command("loop queue")]
-    [Alias("repeat queue")]
-    [RequireUserInVoiceChannel]
-    public async Task LoopQueueAsync()
-    {
-        var player = await GetPlayerAsync();
-        if (player is null)
-        {
-            return;
-        }
-
-        player.RepeatMode = player.RepeatMode is not TrackRepeatMode.Queue
-            ? TrackRepeatMode.Queue
-            : TrackRepeatMode.None;
-
-        await ReplyAsync(
-            embed: Embeds.Success(
-                $"I will {(player.RepeatMode is TrackRepeatMode.Queue ? "now" : "no longer")} repeat the queue"
-            )
-        );
-    }
-
-    [Command("move")]
-    [Alias("mv")]
+    [AniviaCommand("move", "Playback", "Moves a track from position x to y", "mv")]
     public async Task MoveTrackAsync(int from, int to)
     {
         var player = await GetPlayerAsync();
@@ -241,22 +168,20 @@ public sealed class PlaybackCommands(
         {
             return;
         }
-        
+
         if (player.MoveTrack(from - 1, to - 1))
         {
-            await ReplyAsync(embed: Embeds.Success("Track moved"));
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Success("Track moved")]});
         }
         else
         {
-            await ReplyAsync(embed: Embeds.Error("Swap failed"));
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Error("Swap failed")]});
         }
     }
 
-    [Command("play", RunMode = RunMode.Async)]
-    [Alias("p")]
-    [Summary("Queue a track or playlist from a search term or url")]
+    [AniviaCommand("play", "Playback", "Queue a track or playlist from a search term or url", "p")]
     [RequireUserInVoiceChannel]
-    public async Task PlayAsync([Remainder] string song)
+    public async Task PlayAsync([CommandParameter(Remainder = true)] string song)
     {
         var player = await GetPlayerAsync().ConfigureAwait(false);
         if (player is null)
@@ -278,10 +203,13 @@ public sealed class PlaybackCommands(
 
         if (!trackLoadResult.HasMatches)
         {
-            await ReplyAsync(embed: Embeds.Error("No tracks that match your search"));
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Error("No tracks that match your search")]});
 
             return;
         }
+
+        var user = Context.User;
+        var username = user.GlobalName ?? user.Username;
 
         if (trackLoadResult.IsPlaylist)
         {
@@ -294,24 +222,34 @@ public sealed class PlaybackCommands(
                 await player.PlayAsync(playlistTrack).ConfigureAwait(false);
             }
 
-            var embed = new EmbedBuilder()
-                .WithTitle("Added Playlist")
-                .WithThumbnailUrl(
+            var embed = new EmbedProperties
+            {
+                Title = "Added Playlist",
+                Thumbnail = new EmbedThumbnailProperties(
                     selectedTrack.ArtworkUri?.ToString() ??
                     $"https://img.youtube.com/vi/{selectedTrack.Identifier}/0.jpg"
-                )
-                .AddField("Track", $"[{selectedTrack.Title}]({selectedTrack.Uri})")
-                // .AddField("Estimated time until played", "n")
-                .AddField("Playlist length", playlistDuration.ToString(@"hh\:mm\:ss"), true)
-                .AddField("Position in upcoming", positionInUpcoming == 1 ? "Next" : positionInUpcoming)
-                .AddField("Number of tracks", trackLoadResult.Tracks.Length, true)
-                .WithFooter(
-                    $"Requested by {Context.User.GlobalName ?? Context.User.Username}",
-                    Context.User.GetAvatarUrl()
-                )
-                .Build();
+                ),
+                Fields =
+                [
+                    new EmbedFieldProperties {Name = "Track", Value = $"[{selectedTrack.Title}]({selectedTrack.Uri})"},
+                    new EmbedFieldProperties
+                        {Name = "Playlist length", Value = playlistDuration.ToString(@"hh\:mm\:ss"), Inline = true},
+                    new EmbedFieldProperties
+                    {
+                        Name = "Position in upcoming",
+                        Value = positionInUpcoming == 1 ? "Next" : positionInUpcoming.ToString()
+                    },
+                    new EmbedFieldProperties
+                        {Name = "Number of tracks", Value = trackLoadResult.Tracks.Length.ToString(), Inline = true}
+                ],
+                Footer = new EmbedFooterProperties
+                {
+                    Text = $"Requested by {username}",
+                    IconUrl = user.HasAvatar ? user.GetAvatarUrl().ToString() : null
+                }
+            };
 
-            await ReplyAsync(embed: embed);
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [embed]});
         }
         else
         {
@@ -319,33 +257,35 @@ public sealed class PlaybackCommands(
 
             if (player.State is PlayerState.Playing)
             {
-                var embed = new EmbedBuilder()
-                    .WithTitle("Added Track")
-                    .WithThumbnailUrl(
+                var embed = new EmbedProperties
+                {
+                    Title = "Added Track",
+                    Thumbnail = new EmbedThumbnailProperties(
                         track.ArtworkUri?.ToString() ?? $"https://img.youtube.com/vi/{track.Identifier}/0.jpg"
-                    )
-                    .AddField("Track", $"[{track.Title}]({track.Uri})")
-                    // .AddField("Estimated time until played", "n")
-                    .AddField("Track length", track.Duration.ToString(@"hh\:mm\:ss"), true)
-                    // .AddField("Position in upcoming", queue.Next == track ? "Next" : queue.Length)
-                    .AddField("Position in queue", player.Queue.Count + 1, true)
-                    .WithFooter(
-                        $"Requested by {Context.User.GlobalName ?? Context.User.Username}",
-                        Context.User.GetAvatarUrl()
-                    )
-                    .Build();
+                    ),
+                    Fields =
+                    [
+                        new EmbedFieldProperties {Name = "Track", Value = $"[{track.Title}]({track.Uri})"},
+                        new EmbedFieldProperties
+                            {Name = "Track length", Value = track.Duration.ToString(@"hh\:mm\:ss"), Inline = true},
+                        new EmbedFieldProperties
+                            {Name = "Position in queue", Value = (player.Queue.Count + 1).ToString(), Inline = true}
+                    ],
+                    Footer = new EmbedFooterProperties
+                    {
+                        Text = $"Requested by {username}",
+                        IconUrl = user.HasAvatar ? user.GetAvatarUrl().ToString() : null
+                    }
+                };
 
-                await ReplyAsync(embed: embed);
+                await ReplyAsync(new ReplyMessageProperties {Embeds = [embed]});
             }
 
             await player.PlayAsync(track).ConfigureAwait(false);
         }
     }
 
-    [Command("remove")]
-    [Alias("rm", "delete", "del")]
-    [Summary("Removes a track from the queue")]
-    [Remarks("remove <track number (1, 2, 3)>")]
+    [AniviaCommand("remove", "Playback", "Removes a track from the queue. rm <track number>", "rm", "delete", "del")]
     public async Task RemoveTrackAsync(int position)
     {
         var player = await GetPlayerAsync();
@@ -357,14 +297,66 @@ public sealed class PlaybackCommands(
         var index = position - 1;
         if (index < 0 || index >= player.Queue.Count)
         {
-            await ReplyAsync(embed: Embeds.Error("Invalid track position"));
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Error("Invalid track position")]});
 
             return;
         }
 
         var track = player.Queue[index]!;
         player.Queue.RemoveAt(index);
-        
-        await ReplyAsync(embed: Embeds.Success($"Removed track [{track.Title}]({track.Uri})"));
+
+        await ReplyAsync(
+            new ReplyMessageProperties {Embeds = [Embeds.Success($"Removed track [{track.Title}]({track.Uri})")]}
+        );
+    }
+
+    private async Task ToggleCurrentTrackLoopAsync()
+    {
+        var player = await GetPlayerAsync();
+        if (player is null)
+        {
+            return;
+        }
+
+        player.RepeatMode = player.RepeatMode is not TrackRepeatMode.Track
+            ? TrackRepeatMode.Track
+            : TrackRepeatMode.None;
+
+        await ReplyAsync(
+            new ReplyMessageProperties
+            {
+                Embeds =
+                [
+                    Embeds.Success(
+                        $"I will {(player.RepeatMode is TrackRepeatMode.Track ? "now" : "no longer")} repeat the current track"
+                    )
+                ]
+            }
+        );
+    }
+
+    private async Task ToggleQueueLoopAsync()
+    {
+        var player = await GetPlayerAsync();
+        if (player is null)
+        {
+            return;
+        }
+
+        player.RepeatMode = player.RepeatMode is not TrackRepeatMode.Queue
+            ? TrackRepeatMode.Queue
+            : TrackRepeatMode.None;
+
+        await ReplyAsync(
+            new ReplyMessageProperties
+            {
+                Embeds =
+                [
+                    Embeds.Success(
+                        $"I will {(player.RepeatMode is TrackRepeatMode.Queue ? "now" : "no longer")} repeat the queue"
+                    )
+                ]
+            }
+        );
     }
 }

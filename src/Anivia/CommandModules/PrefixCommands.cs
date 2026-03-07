@@ -1,13 +1,10 @@
 using Anivia.Infrastructure;
-using Discord;
-using Discord.Commands;
 using Lavalink4NET;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace Anivia.CommandModules;
 
-[Name("Prefix")]
-[Group("prefix")]
-[Summary("Prefix related commands")]
 public sealed class PrefixCommands(
     IAudioService lavalinkAudioService,
     IAuditableOptionsSnapshot<DiscordOptions> discordOptions
@@ -15,28 +12,31 @@ public sealed class PrefixCommands(
 {
     private readonly IAuditableOptionsSnapshot<DiscordOptions> _discordOptions = discordOptions;
 
-    [Command("list")]
-    [Alias("l", "")]
+    [AniviaCommand("prefixlist", "Prefix", "Displays availablie command prefixes", "prefix")]
     public async Task ListPrefixesAsync()
     {
         var prefixes = string.Join(", ", _discordOptions.CurrentValue.CommandPrefixes);
 
-        var embed = new EmbedBuilder()
-            .WithFields(
-                new EmbedFieldBuilder()
-                    .WithName("Server prefixes")
-                    .WithValue(prefixes)
-            )
-            .Build();
+        var embed = new EmbedProperties
+        {
+            Fields =
+            [
+                new EmbedFieldProperties
+                {
+                    Name = "Server prefixes",
+                    Value = prefixes
+                }
+            ]
+        };
 
-        await ReplyAsync(embed: embed);
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [embed]});
     }
 
-    [Command("add")]
+    [AniviaCommand("addprefix", "Prefix", "Adds a new prefix")]
     public async Task SetPrefixAsync(string prefix)
     {
         _discordOptions.Update(options => { options.CommandPrefixes.Add(prefix); });
 
-        await ReplyAsync($"'{prefix}' added");
+        await ReplyAsync(new ReplyMessageProperties {Content = $"'{prefix}' added"});
     }
 }

@@ -1,17 +1,15 @@
-using System.Runtime.InteropServices;
 using Anivia.Infrastructure;
-using Discord.Commands;
 using Lavalink4NET;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace Anivia.CommandModules;
 
-[Name("Queue State")]
-[Summary("Commands used for updating the state of the queue")]
-public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : AniviaCommandModule(lavalinkAudioService)
+public sealed class QueueStateCommands(IAudioService lavalinkAudioService)
+    : AniviaCommandModule(lavalinkAudioService)
 {
-    private readonly IAudioService _lavalinkAudioService = lavalinkAudioService;
 
-    [Command("shuffle")]
+    [AniviaCommand("shuffle", "Queue state", "Shuffles the order of tracks in the queue")]
     [RequireUserInVoiceChannel]
     public async Task ShuffleQueueAsync()
     {
@@ -22,14 +20,12 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
         }
 
         player.Queue.Shuffle();
-        await ReplyAsync(embed: Embeds.Success("The queue has been shuffled"));
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Success("The queue has been shuffled")]});
     }
 
-    [Command("skip")]
-    [Summary("Skips the current track, or an arbitrary number of tracks")]
-    [Remarks("skip [number of tracks]")]
+    [AniviaCommand("skip", "Queue state", "Skips the current track, or an arbitrary number of tracks")]
     [RequireUserInVoiceChannel]
-    public async Task SkipAsync([Optional] int? numberOfTracks)
+    public async Task SkipAsync([CommandParameter] int numberOfTracks = 1)
     {
         var player = await GetPlayerAsync();
         if (player is null)
@@ -37,12 +33,10 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
             return;
         }
 
-        await player.SkipAsync(numberOfTracks ?? 1);
+        await player.SkipAsync(numberOfTracks);
     }
 
-    [Command("jump to")]
-    [Summary("Jumps to the desired track")]
-    [Remarks("jump to <position>")]
+    [AniviaCommand("jumpto", "Queue state", "Jumps to the desired track")]
     [RequireUserInVoiceChannel]
     public async Task SkipToAsync(int position)
     {
@@ -51,7 +45,7 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
         {
             return;
         }
-        
+
         var nextTrack = player.Queue[position - 1];
         if (nextTrack is null)
         {
@@ -59,6 +53,8 @@ public sealed class QueueStateCommands(IAudioService lavalinkAudioService) : Ani
         }
 
         await player.JumpToAsync(position - 1);
-        await ReplyAsync(embed: Embeds.Success($"Jumped to track at position {position}"));
+        await ReplyAsync(
+            new ReplyMessageProperties {Embeds = [Embeds.Success($"Jumped to track at position {position}")]}
+        );
     }
 }

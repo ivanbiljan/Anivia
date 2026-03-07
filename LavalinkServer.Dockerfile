@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jre-noble
+FROM eclipse-temurin:17-jre-noble
 
 WORKDIR /opt/Lavalink
 

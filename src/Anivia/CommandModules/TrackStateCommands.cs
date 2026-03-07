@@ -1,17 +1,17 @@
 using System.Text.RegularExpressions;
 using Anivia.Extensions;
 using Anivia.Infrastructure;
-using Discord.Commands;
 using Lavalink4NET;
+using NetCord.Rest;
+using NetCord.Services.Commands;
 
 namespace Anivia.CommandModules;
 
-[Name("Track State")]
-[Summary("Commands used for updating the state of the current track")]
-public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : AniviaCommandModule(lavalinkAudioService)
+public sealed class TrackStateCommands(IAudioService lavalinkAudioService)
+    : AniviaCommandModule(lavalinkAudioService)
 {
-    [Command("pause")]
-    [Summary("Pauses the current track")]
+
+    [AniviaCommand("pause", "Track state", "Pauses the current track")]
     [RequireUserInVoiceChannel]
     public async Task PauseCurrentTrackAsync()
     {
@@ -23,14 +23,19 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
         await player.PauseAsync();
         await ReplyAsync(
-            embed: Embeds.Success(
-                $"Track has been paused at {player.Position!.Value.Position.ToShortString().AsBold()} :pause_button:"
-            )
+            new ReplyMessageProperties
+            {
+                Embeds =
+                [
+                    Embeds.Success(
+                        $"Track has been paused at {player.Position!.Value.Position.ToShortString().AsBold()} :pause_button:"
+                    )
+                ]
+            }
         );
     }
 
-    [Command("resume")]
-    [Summary("Resumes the current track")]
+    [AniviaCommand("resume", "Track state", "Resumes the current track")]
     [RequireUserInVoiceChannel]
     public async Task ResumeCurrentTrackAsync()
     {
@@ -42,14 +47,11 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
 
         await player.ResumeAsync();
 
-        await ReplyAsync(embed: Embeds.Success("Track has been resumed :play_pause:"));
+        await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Success("Track has been resumed :play_pause:")]});
     }
 
-    [Command("seek")]
-    [Summary("Seeks the current track")]
-    [Alias("wind to")]
-    [Remarks("seek <seconds>, seek 1m30s, seek 1:30")]
-    public async Task SeekAsync(string timestamp)
+    [AniviaCommand("seek", "Track state", "Seeks the current track. seek <seconds|1m30s>")]
+    public async Task SeekAsync([CommandParameter(Remainder = true)] string timestamp)
     {
         var player = await GetPlayerAsync();
         if (player is not {CurrentTrack: not null})
@@ -60,16 +62,22 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         var position = ParseTimestamp(timestamp);
         if (position is null || position.Value >= player.CurrentTrack.Duration)
         {
-            await ReplyAsync(embed: Embeds.Error("Invalid timestamp"));
+            await ReplyAsync(new ReplyMessageProperties {Embeds = [Embeds.Error("Invalid timestamp")]});
 
             return;
         }
 
         await player.SeekAsync(position.Value);
         await ReplyAsync(
-            embed: Embeds.Success(
-                $"Track has been wound to {position.Value.ToShortString()}/{player.CurrentTrack!.Duration.ToShortString()} :fast_forward:"
-            )
+            new ReplyMessageProperties
+            {
+                Embeds =
+                [
+                    Embeds.Success(
+                        $"Track has been wound to {position.Value.ToShortString()}/{player.CurrentTrack!.Duration.ToShortString()} :fast_forward:"
+                    )
+                ]
+            }
         );
 
         return;
@@ -80,7 +88,7 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
             {
                 return TimeSpan.FromSeconds(inputSeconds);
             }
-            
+
             if (TimeSpan.TryParse(input, out var result))
             {
                 return result;
@@ -99,11 +107,8 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         }
     }
 
-    [Command("backward")]
-    [Alias("back", "b", "rewind")]
-    [Summary("Rewinds the current track by a number of seconds")]
-    [Remarks("back 10")]
-    public async Task WindCurrentTrackBackwardsAsync(int seconds)
+    [AniviaCommand("backward", "Track state", "Rewinds the current track by a number of seconds", "back", "b", "rewind")]
+    public async Task WindCurrentTrackBackwardsAsync([CommandParameter] int seconds)
     {
         var player = await GetPlayerAsync();
         if (player is null)
@@ -120,15 +125,19 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         await player.SeekAsync(forwardedTimestamp);
 
         await ReplyAsync(
-            embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :rewind:"
-            )
+            new ReplyMessageProperties
+            {
+                Embeds =
+                [
+                    Embeds.Success(
+                        $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :rewind:"
+                    )
+                ]
+            }
         );
     }
 
-    [Command("forward")]
-    [Alias("f")]
-    [Summary("Forwards the current track by a number of seconds")]
+    [AniviaCommand("forward", "Track state", "Forwards the current track by a number of seconds", "f")]
     public async Task WindCurrentTrackForwardAsync(int seconds)
     {
         var player = await GetPlayerAsync();
@@ -141,9 +150,15 @@ public sealed class TrackStateCommands(IAudioService lavalinkAudioService) : Ani
         await player.SeekAsync(forwardedTimestamp);
 
         await ReplyAsync(
-            embed: Embeds.Success(
-                $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :fast_forward:"
-            )
+            new ReplyMessageProperties
+            {
+                Embeds =
+                [
+                    Embeds.Success(
+                        $"Track has been wound to {forwardedTimestamp.ToShortString()}/{player.CurrentTrack.Duration} :fast_forward:"
+                    )
+                ]
+            }
         );
     }
 }
